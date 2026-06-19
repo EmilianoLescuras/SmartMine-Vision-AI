@@ -1,5 +1,7 @@
 """Plotting utilities for dataset exploration and inference results."""
 
+from __future__ import annotations
+
 from pathlib import Path
 import random
 

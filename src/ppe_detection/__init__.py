@@ -1,5 +1,7 @@
 """PPE Detection module — Stage 1 of SmartMine Vision AI."""
 
+from __future__ import annotations
+
 from .dataset_loader import load_dataset_stats, stats_to_dataframe, class_distribution_dataframe
 from .utils import CLASS_NAMES, PPE_CLASSES, ensure_dirs
 

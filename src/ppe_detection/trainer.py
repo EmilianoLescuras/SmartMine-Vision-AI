@@ -1,5 +1,7 @@
 """YOLOv8 training wrapper for the PPE detection model."""
 
+from __future__ import annotations
+
 from pathlib import Path
 
 from ultralytics import YOLO

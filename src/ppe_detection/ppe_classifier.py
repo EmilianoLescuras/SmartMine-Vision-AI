@@ -8,6 +8,8 @@ A worker (Person bounding box) is classified as:
 This module is independent of tracking, databases, and APIs.
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from enum import Enum
 

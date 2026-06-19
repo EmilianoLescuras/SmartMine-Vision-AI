@@ -1,0 +1,27 @@
+{
+  "generated_at": "2026-06-19T17:49:57.834572",
+  "dataset": "Construction Site Safety (Roboflow / Kaggle)",
+  "total_files": 2801,
+  "splits": {
+    "test": {
+      "images": 82,
+      "with_label": 82,
+      "background": 8,
+      "with_issues": 0
+    },
+    "train": {
+      "images": 2605,
+      "with_label": 2605,
+      "background": 6,
+      "with_issues": 0
+    },
+    "valid": {
+      "images": 114,
+      "with_label": 114,
+      "background": 10,
+      "with_issues": 0
+    }
+  },
+  "real_issue_counts": {},
+  "verdict": "CLEAN"
+}

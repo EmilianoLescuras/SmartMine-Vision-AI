@@ -1,5 +1,7 @@
 """Shared constants and path utilities for the PPE detection module."""
 
+from __future__ import annotations
+
 from pathlib import Path
 
 # ── Project roots ─────────────────────────────────────────────────────────────
