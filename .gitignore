@@ -1,0 +1,64 @@
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+
+# ── Environments ──────────────────────────────────────────────────────────────
+.env
+.venv/
+venv/
+env/
+*.env.local
+
+# ── Jupyter ───────────────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.nbconvert.ipynb
+
+# ── Model Weights (large binaries — store in DVC or cloud storage) ────────────
+models/**/*.pt
+models/**/*.pth
+models/**/*.onnx
+models/**/*.engine
+!models/**/README.md
+
+# ── Datasets (large files — document sources, do not commit raw data) ─────────
+datasets/raw/**/*
+datasets/processed/**/*
+!datasets/raw/**/README.md
+!datasets/processed/.gitkeep
+!datasets/raw/ppe/.gitkeep
+!datasets/raw/vehicles/.gitkeep
+!datasets/raw/custom/.gitkeep
+
+# ── Outputs ───────────────────────────────────────────────────────────────────
+outputs/images/**/*
+outputs/videos/**/*
+outputs/logs/**/*
+!outputs/**/README.md
+!outputs/**/.gitkeep
+
+# ── IDE ───────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# ── MLflow ────────────────────────────────────────────────────────────────────
+mlruns/
+mlartifacts/
+
+# ── Docker ────────────────────────────────────────────────────────────────────
+*.pid
+
+# ── Misc ──────────────────────────────────────────────────────────────────────
+*.log
+*.tmp
+*.bak
+Thumbs.db
