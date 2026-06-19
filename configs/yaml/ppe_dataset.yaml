@@ -1,0 +1,28 @@
+# PPE Detection Dataset Configuration
+# Dataset: Construction Site Safety (Roboflow / Kaggle)
+# Format:  YOLOv8 (class cx cy w h — normalized)
+# Images:  2801 total | 2605 train / 114 val / 82 test
+# License: CC BY 4.0
+
+path: /Users/nanolescuras/Downloads/SmartMine COMP VISION/css-data
+train: train/images
+val:   valid/images
+test:  test/images
+
+nc: 10
+names:
+  0: Hardhat
+  1: Mask
+  2: NO-Hardhat
+  3: NO-Mask
+  4: NO-Safety Vest
+  5: Person
+  6: Safety Cone
+  7: Safety Vest
+  8: machinery
+  9: vehicle
+
+# Stage 1 — classes of primary interest for PPE compliance
+# SAFE worker:   Person + Hardhat (0) + Safety Vest (7)
+# UNSAFE worker: Person + NO-Hardhat (2) | NO-Safety Vest (4)
+ppe_target_classes: [0, 2, 4, 5, 7]
