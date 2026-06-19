@@ -4,7 +4,7 @@ from pathlib import Path
 
 # ── Project roots ─────────────────────────────────────────────────────────────
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DATASET_ROOT = Path("/Users/nanolescuras/Downloads/SmartMine COMP VISION/css-data")
+DATASET_ROOT = PROJECT_ROOT / "datasets" / "raw" / "ppe" / "css-data"
 
 TRAIN_IMAGES = DATASET_ROOT / "train" / "images"
 TRAIN_LABELS = DATASET_ROOT / "train" / "labels"

@@ -39,7 +39,8 @@ def count_annotations(labels_dir: Path) -> tuple[int, dict[int, int]]:
 
 def get_split_stats(name: str, images_dir: Path, labels_dir: Path) -> SplitStats:
     """Compute statistics for a single dataset split."""
-    n_images = len(list(images_dir.glob("*.jpg"))) + len(list(images_dir.glob("*.png")))
+    _IMG_EXTS = ["*.jpg", "*.jpeg", "*.png", "*.JPG", "*.PNG", "*.JPEG", "*.bmp"]
+    n_images = sum(len(list(images_dir.glob(ext))) for ext in _IMG_EXTS)
     n_labels = len(list(labels_dir.glob("*.txt")))
     total_ann, class_counts = count_annotations(labels_dir)
     return SplitStats(name, n_images, n_labels, total_ann, class_counts)
@@ -86,5 +87,6 @@ def class_distribution_dataframe(stats: list[SplitStats]) -> pd.DataFrame:
     df = pd.DataFrame(rows).fillna(0).astype(
         {c: int for c in ["train", "valid", "test"] if c in pd.DataFrame(rows).columns}
     )
-    df["total"] = df[["train", "valid", "test"]].sum(axis=1)
+    split_cols = [c for c in ["train", "valid", "test"] if c in df.columns]
+    df["total"] = df[split_cols].sum(axis=1)
     return df.set_index("class_id")

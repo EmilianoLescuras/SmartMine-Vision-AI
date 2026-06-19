@@ -4,7 +4,7 @@
 # Images:  2801 total | 2605 train / 114 val / 82 test
 # License: CC BY 4.0
 
-path: /Users/nanolescuras/Downloads/SmartMine COMP VISION/css-data
+path: /Users/nanolescuras/SmartMine-Vision-AI/datasets/raw/ppe/css-data
 train: train/images
 val:   valid/images
 test:  test/images

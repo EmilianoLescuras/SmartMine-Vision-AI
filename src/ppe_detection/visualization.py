@@ -93,7 +93,10 @@ def plot_sample_images(
 ) -> None:
     """Display n random images from a split with ground-truth boxes."""
     random.seed(seed)
-    all_images = list(images_dir.glob("*.jpg")) + list(images_dir.glob("*.png"))
+    all_images = list(images_dir.glob("*.jpg")) + list(images_dir.glob("*.jpeg")) + list(images_dir.glob("*.png"))
+    if not all_images:
+        print(f"⚠️  No images found in {images_dir}")
+        return
     samples = random.sample(all_images, min(n, len(all_images)))
 
     cols = 3
@@ -102,13 +105,10 @@ def plot_sample_images(
     axes = np.array(axes).flatten()
 
     for ax, img_path in zip(axes, samples):
-        img = cv2.imread(str(img_path))
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img_bgr = cv2.imread(str(img_path))
         lbl_path = labels_dir / (img_path.stem + ".txt")
-        annotated = draw_yolo_boxes(
-            cv2.cvtColor(img, cv2.COLOR_RGB2BGR), lbl_path
-        )
-        ax.imshow(cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB))
+        annotated_bgr = draw_yolo_boxes(img_bgr, lbl_path)
+        ax.imshow(cv2.cvtColor(annotated_bgr, cv2.COLOR_BGR2RGB))
         ax.set_title(img_path.name[:40], fontsize=8)
         ax.axis("off")
 
