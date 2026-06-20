@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.10" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>SmartMine Vision AI — Propuesta Técnica y Comercial</title>
+  <style>
+
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+
+ul.task-list[class]{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+font-size: inherit;
+width: 0.8em;
+margin: 0 0.8em 0.2em -1.6em;
+vertical-align: middle;
+}
+.display.math{display: block; text-align: center; margin: 0.5rem auto;}
+</style>
+  <style type="text/css">body { font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 30px; color: #1a1a2e; line-height: 1.7; }
+h1 { color: #0d47a1; border-bottom: 3px solid #0d47a1; padding-bottom: 10px; }
+h2 { color: #1565c0; border-left: 5px solid #1565c0; padding-left: 12px; margin-top: 40px; }
+h3 { color: #1976d2; }
+table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+th { background-color: #0d47a1; color: white; padding: 10px 14px; text-align: left; }
+td { padding: 9px 14px; border-bottom: 1px solid #e0e0e0; }
+tr:nth-child(even) { background-color: #f5f7fa; }
+code, pre { background: #f5f5f5; border-radius: 4px; padding: 2px 6px; font-family: monospace; font-size: 0.9em; }
+pre { padding: 16px; overflow-x: auto; border-left: 4px solid #1565c0; }
+blockquote { border-left: 4px solid #42a5f5; background: #e3f2fd; padding: 12px 20px; margin: 20px 0; border-radius: 0 8px 8px 0; }
+hr { border: none; border-top: 2px solid #e0e0e0; margin: 30px 0; }
+@media print { body { margin: 20px; } }
+</style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">SmartMine Vision AI — Propuesta Técnica y
+Comercial</h1>
+</header>
+<h1 id="smartmine-vision-ai">SmartMine Vision AI</h1>
+<h2 id="propuesta-técnica-y-comercial">Propuesta Técnica y
+Comercial</h2>
+<h3 id="plataforma-inteligente-de-monitoreo-de-seguridad-para-minería-e-industria-4.0">Plataforma
+Inteligente de Monitoreo de Seguridad para Minería e Industria 4.0</h3>
+<hr />
+<blockquote>
+<p><strong>Versión:</strong> 1.0<br />
+<strong>Fecha:</strong> Junio 2026<br />
+<strong>Clasificación:</strong> Confidencial</p>
+</blockquote>
+<hr />
+<h1 id="índice">ÍNDICE</h1>
+<ol type="1">
+<li>Resumen Ejecutivo</li>
+<li>El Problema</li>
+<li>La Solución</li>
+<li>Arquitectura Técnica</li>
+<li>Módulos del Sistema</li>
+<li>Plan de Implementación y Tiempos</li>
+<li>Tiempo de Llegada a Producción</li>
+<li>Beneficios para la Empresa</li>
+<li>Análisis de ROI</li>
+<li>Tecnologías Utilizadas</li>
+<li>Preguntas Frecuentes</li>
+</ol>
+<hr />
+<h1 id="resumen-ejecutivo">1. RESUMEN EJECUTIVO</h1>
+<p>SmartMine Vision AI es una plataforma de inteligencia artificial
+aplicada a visión computacional, diseñada específicamente para
+<strong>monitorear la seguridad en sitios mineros e industriales en
+tiempo real</strong>.</p>
+<p>El sistema analiza automáticamente feeds de cámaras de vigilancia ya
+existentes para:</p>
+<ul>
+<li>Detectar si los trabajadores usan el Equipo de Protección Personal
+(EPP) obligatorio.</li>
+<li>Alertar cuando un vehículo pesado se acerca peligrosamente a un
+operario.</li>
+<li>Registrar cada evento en una base de datos centralizada.</li>
+<li>Visualizar el estado de seguridad del sitio en dashboards en tiempo
+real.</li>
+</ul>
+<p><strong>No requiere reemplazar infraestructura existente.</strong> Se
+conecta a las cámaras ya instaladas en el sitio y comienza a generar
+valor desde el primer día de despliegue.</p>
+<hr />
+<h1 id="el-problema">2. EL PROBLEMA</h1>
+<h2 id="la-realidad-de-la-seguridad-minera">2.1 La Realidad de la
+Seguridad Minera</h2>
+<p>La industria minera es uno de los sectores con mayor tasa de
+accidentes laborales a nivel mundial. Según datos de la Organización
+Internacional del Trabajo (OIT):</p>
+<ul>
+<li><strong>La minería representa menos del 1% de la fuerza laboral
+global pero genera el 8% de los accidentes mortales.</strong></li>
+<li>El 70% de los accidentes graves en sitios mineros involucran
+<strong>falta de EPP</strong> o <strong>colisiones
+vehículo-persona</strong>.</li>
+<li>El costo promedio de un accidente grave para una empresa minera
+supera los <strong>USD 500,000</strong> contando atención médica,
+paralización de operaciones, litigios y multas regulatorias.</li>
+</ul>
+<h2 id="las-limitaciones-del-control-manual">2.2 Las Limitaciones del
+Control Manual</h2>
+<p>Los métodos actuales de supervisión de seguridad tienen fallas
+estructurales:</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Método Actual</th>
+<th>Problema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Supervisor en campo</td>
+<td>No puede estar en todos los puntos a la vez</td>
+</tr>
+<tr>
+<td>Revisión de cámaras por personal</td>
+<td>Costoso, propenso a fatiga visual, reactivo</td>
+</tr>
+<tr>
+<td>Auditorías periódicas</td>
+<td>Detectan problemas después de que ocurrieron</td>
+</tr>
+<tr>
+<td>Planillas de cumplimiento</td>
+<td>Datos manuales, fácilmente alterables</td>
+</tr>
+<tr>
+<td>Alarmas manuales</td>
+<td>Solo funcionan cuando alguien las activa</td>
+</tr>
+</tbody>
+</table>
+<h2 id="el-costo-de-no-actuar">2.3 El Costo de No Actuar</h2>
+<p>Un solo accidente grave puede costar a la empresa:</p>
+<ul>
+<li><strong>USD 200,000 – 1,000,000</strong> en indemnizaciones y
+atención médica.</li>
+<li><strong>10 a 30 días</strong> de paralización parcial o total de
+operaciones.</li>
+<li><strong>Multas regulatorias</strong> que en muchos países superan
+los USD 100,000 por infracción.</li>
+<li><strong>Daño reputacional</strong> que afecta contratos futuros y
+relaciones con comunidades.</li>
+<li><strong>Procesos penales</strong> para directivos en caso de
+accidente fatal.</li>
+</ul>
+<hr />
+<h1 id="la-solución">3. LA SOLUCIÓN</h1>
+<h2 id="qué-es-smartmine-vision-ai">3.1 ¿Qué es SmartMine Vision
+AI?</h2>
+<p>Es un sistema de software que utiliza <strong>modelos de inteligencia
+artificial de visión computacional</strong> para analizar el video de
+las cámaras del sitio minero en tiempo real, sin intervención
+humana.</p>
+<p>El sistema:</p>
+<ol type="1">
+<li><strong>Ve</strong> — Analiza cada fotograma del video capturado por
+las cámaras.</li>
+<li><strong>Detecta</strong> — Identifica personas, cascos, chalecos,
+vehículos y equipos pesados.</li>
+<li><strong>Clasifica</strong> — Determina si cada trabajador es SEGURO
+o EN RIESGO.</li>
+<li><strong>Alerta</strong> — Genera una notificación inmediata cuando
+detecta una infracción.</li>
+<li><strong>Registra</strong> — Guarda cada evento en base de datos con
+timestamp, imagen y descripción.</li>
+<li><strong>Reporta</strong> — Muestra un dashboard en tiempo real con
+el estado de seguridad del sitio.</li>
+</ol>
+<h2 id="cómo-funciona-sin-tecnicismos">3.2 ¿Cómo Funciona? (Sin
+Tecnicismos)</h2>
+<p>Imagine que coloca un supervisor digital con visión perfecta en cada
+cámara del sitio, que nunca se distrae, nunca se cansa, trabaja las 24
+horas los 365 días del año, y puede procesar hasta <strong>120
+fotogramas por segundo</strong> por cámara.</p>
+<p>Ese supervisor digital:</p>
+<ul>
+<li>Sabe exactamente qué es un casco y qué no lo es.</li>
+<li>Sabe cuándo un camión está demasiado cerca de un operario.</li>
+<li>Genera una alerta en menos de <strong>1 segundo</strong> desde que
+detecta el problema.</li>
+<li>Lleva un registro perfecto, automático e inalterable de todo lo que
+ocurre.</li>
+</ul>
+<hr />
+<h1 id="arquitectura-técnica">4. ARQUITECTURA TÉCNICA</h1>
+<pre><code>┌─────────────────────────────────────────────────────────────┐
+│                     FUENTE DE VIDEO                         │
+│          Cámaras IP / RTSP / Archivos de video              │
+└───────────────────────┬─────────────────────────────────────┘
+                        │
+                        ▼
+┌─────────────────────────────────────────────────────────────┐
+│              MÓDULO 1: DETECCIÓN DE EPP                     │
+│   YOLOv8 — detecta: Casco, Chaleco, Persona,               │
+│   NO-Casco, NO-Chaleco (violación directa)                  │
+└───────────────────────┬─────────────────────────────────────┘
+                        │
+                        ▼
+┌─────────────────────────────────────────────────────────────┐
+│           MÓDULO 2: DETECCIÓN DE VEHÍCULOS                  │
+│   YOLOv8 — detecta: Camión, Auto, Maquinaria                │
+└───────────────────────┬─────────────────────────────────────┘
+                        │
+                        ▼
+┌─────────────────────────────────────────────────────────────┐
+│          MÓDULO 3: TRACKING MULTI-OBJETO                    │
+│   ByteTrack — asigna ID único a cada persona/vehículo       │
+│   y mantiene su identidad entre fotogramas                  │
+└───────────────────────┬─────────────────────────────────────┘
+                        │
+                        ▼
+┌─────────────────────────────────────────────────────────────┐
+│          MÓDULO 4: ALERTAS DE PROXIMIDAD                    │
+│   Calcula distancia persona-vehículo en tiempo real.        │
+│   Zona ADVERTENCIA (amarilla) / Zona CRÍTICA (roja)         │
+└───────────────────────┬─────────────────────────────────────┘
+                        │
+                        ▼
+              ┌─────────┴──────────┐
+              ▼                    ▼
+┌─────────────────────┐  ┌─────────────────────┐
+│   BASE DE DATOS     │  │    API REST          │
+│   PostgreSQL        │  │    FastAPI           │
+│   Registra eventos  │  │    Conecta sistemas  │
+│   y alertas         │  │    externos          │
+└─────────┬───────────┘  └──────────┬──────────┘
+          └──────────────┬──────────┘
+                         ▼
+          ┌──────────────────────────────┐
+          │      DASHBOARD POWER BI      │
+          │   KPIs en tiempo real        │
+          │   Historial de incidentes    │
+          │   Reportes de cumplimiento   │
+          └──────────────────────────────┘</code></pre>
+<hr />
+<h1 id="módulos-del-sistema">5. MÓDULOS DEL SISTEMA</h1>
+<h2 id="módulo-1-detección-de-epp-etapa-actual">Módulo 1 — Detección de
+EPP (Etapa Actual)</h2>
+<p><strong>Objetivo:</strong> Determinar si cada trabajador visible en
+cámara porta el EPP obligatorio.</p>
+<p><strong>Clases detectadas:</strong> | Clase | Descripción | |—|—| |
+Persona | Trabajador en campo | | Casco (Hardhat) | EPP compliant ✅ | |
+Chaleco de Seguridad | EPP compliant ✅ | | NO-Casco | Violación
+detectada ❌ | | NO-Chaleco | Violación detectada ❌ |</p>
+<p><strong>Resultado por trabajador:</strong> <code>SEGURO</code> o
+<code>EN RIESGO</code> + registro de qué EPP falta.</p>
+<p><strong>Tiempo de respuesta:</strong> &lt; 50 ms por fotograma en
+GPU.</p>
+<hr />
+<h2 id="módulo-2-detección-de-vehículos">Módulo 2 — Detección de
+Vehículos</h2>
+<p><strong>Objetivo:</strong> Identificar y localizar vehículos pesados
+en el campo visual.</p>
+<p><strong>Clases detectadas:</strong> Camión, Auto, Maquinaria pesada,
+Motocicleta.</p>
+<p><strong>Integración:</strong> Los vehículos detectados alimentan al
+módulo de alertas de proximidad.</p>
+<hr />
+<h2 id="módulo-3-tracking-multi-objeto">Módulo 3 — Tracking
+Multi-Objeto</h2>
+<p><strong>Objetivo:</strong> Mantener la identidad de cada trabajador y
+vehículo entre fotogramas.</p>
+<p><strong>Beneficio clave:</strong> Permite saber que el trabajador
+ID-042 estuvo sin casco durante 3 minutos en la zona B, no solo que
+“alguien” estaba sin casco en un fotograma aislado.</p>
+<p><strong>Tecnología:</strong> ByteTrack — algoritmo de tracking de
+última generación, robusto a oclusiones parciales y cambios de
+velocidad.</p>
+<hr />
+<h2 id="módulo-4-alertas-de-proximidad">Módulo 4 — Alertas de
+Proximidad</h2>
+<p><strong>Objetivo:</strong> Detectar situaciones de peligro antes de
+que ocurra el accidente.</p>
+<p><strong>Zonas de alerta:</strong></p>
+<pre><code>[ZONA CRÍTICA] &lt; 3 metros entre persona y vehículo en movimiento
+   → Alerta inmediata + sirena + registro de imagen
+
+[ZONA ADVERTENCIA] 3-8 metros entre persona y vehículo
+   → Alerta visual en dashboard + registro</code></pre>
+<hr />
+<h2 id="módulo-5-base-de-datos-y-api">Módulo 5 — Base de Datos y
+API</h2>
+<p><strong>Objetivo:</strong> Persistir cada evento para auditoría,
+compliance y análisis.</p>
+<p><strong>Cada registro incluye:</strong> - Timestamp exacto - Cámara
+origen - Tipo de evento (EPP / Proximidad) - Imagen capturada del
+momento - ID del trabajador (si tracking activo) - Severidad del
+evento</p>
+<p><strong>API REST:</strong> Permite integración con sistemas ERP,
+SCADA, o plataformas de gestión de seguridad ya existentes en la
+empresa.</p>
+<hr />
+<h2 id="módulo-6-dashboard-y-reportes">Módulo 6 — Dashboard y
+Reportes</h2>
+<p><strong>Herramienta:</strong> Power BI conectado a la base de datos
+en tiempo real.</p>
+<p><strong>KPIs disponibles:</strong> - Tasa de cumplimiento de EPP por
+turno / zona / trabajador - Número de alertas de proximidad por día -
+Mapa de calor de incidentes por zona del sitio - Ranking de zonas más
+peligrosas - Reporte automático para auditorías regulatorias</p>
+<hr />
+<h1 id="plan-de-implementación-y-tiempos">6. PLAN DE IMPLEMENTACIÓN Y
+TIEMPOS</h1>
+<h2 id="fases-de-desarrollo">6.1 Fases de Desarrollo</h2>
+<h3 id="fase-1-detección-de-epp-en-curso">FASE 1 — Detección de EPP
+<em>(En Curso)</em></h3>
+<p><strong>Duración: 5-6 semanas</strong></p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Semana</th>
+<th>Actividad</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1-2</td>
+<td>Exploración y validación del dataset. Configuración del
+entorno.</td>
+</tr>
+<tr>
+<td>3-4</td>
+<td>Entrenamiento del modelo YOLOv8 (100 épocas).</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Evaluación de métricas. Ajuste de umbrales.</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Inferencia en imagen y video. Integración lógica SEGURO/EN
+RIESGO.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Entregable:</strong> Modelo funcional con mAP50 &gt; 0.70.
+Pipeline de video operativo.</p>
+<hr />
+<h3 id="fase-2-detección-de-vehículos">FASE 2 — Detección de
+Vehículos</h3>
+<p><strong>Duración: 4 semanas</strong></p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Semana</th>
+<th>Actividad</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>7-8</td>
+<td>Adquisición y preparación del dataset vehicular (BDD100K /
+COCO).</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Entrenamiento y evaluación del modelo de vehículos.</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Integración con pipeline existente. Tests combinados.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Entregable:</strong> Detección simultánea de personas y
+vehículos en mismo frame.</p>
+<hr />
+<h3 id="fase-3-tracking-multi-objeto">FASE 3 — Tracking
+Multi-Objeto</h3>
+<p><strong>Duración: 3-4 semanas</strong></p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Semana</th>
+<th>Actividad</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>11-12</td>
+<td>Integración de ByteTrack con los dos modelos de detección.</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Asignación de IDs persistentes. Tests de robustez en videos
+largos.</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Optimización de velocidad. Documentación.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Entregable:</strong> Cada persona y vehículo mantiene ID
+único a través de los frames.</p>
+<hr />
+<h3 id="fase-4-alertas-de-proximidad">FASE 4 — Alertas de
+Proximidad</h3>
+<p><strong>Duración: 3 semanas</strong></p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Semana</th>
+<th>Actividad</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>15-16</td>
+<td>Motor de cálculo de distancia persona-vehículo. Definición de
+zonas.</td>
+</tr>
+<tr>
+<td>17</td>
+<td>Tests en videos reales del sitio. Calibración de umbrales.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Entregable:</strong> Sistema de alertas automático en tiempo
+real.</p>
+<hr />
+<h3 id="fase-5-base-de-datos-y-api">FASE 5 — Base de Datos y API</h3>
+<p><strong>Duración: 4-5 semanas</strong></p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Semana</th>
+<th>Actividad</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>18-19</td>
+<td>Diseño del esquema PostgreSQL. Implementación ORM SQLAlchemy.</td>
+</tr>
+<tr>
+<td>20-21</td>
+<td>Desarrollo de la API REST con FastAPI. Autenticación.</td>
+</tr>
+<tr>
+<td>22</td>
+<td>Tests de integración. Documentación de endpoints.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Entregable:</strong> API productiva con todos los eventos
+persistidos y consultables.</p>
+<hr />
+<h3 id="fase-6-dashboard-docker-y-deployment">FASE 6 — Dashboard, Docker
+y Deployment</h3>
+<p><strong>Duración: 5-6 semanas</strong></p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Semana</th>
+<th>Actividad</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>23-24</td>
+<td>Conexión Power BI a PostgreSQL. Diseño de reportes y KPIs.</td>
+</tr>
+<tr>
+<td>25-26</td>
+<td>Dockerización de todos los servicios. Docker Compose.</td>
+</tr>
+<tr>
+<td>27-28</td>
+<td>CI/CD pipeline. Deployment en infraestructura cloud
+(AWS/Azure).</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Entregable:</strong> Sistema completo, containerizado y
+desplegado en la nube.</p>
+<hr />
+<h2 id="resumen-de-timeline-de-desarrollo">6.2 Resumen de Timeline de
+Desarrollo</h2>
+<pre><code>SEMANA:    1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28
+           ├──────────────┤
+Fase 1     █  █  █  █  █  █
+EPP        └──────────────┘
+                           ├──────────┤
+Fase 2                     █  █  █  █
+Vehículos                  └──────────┘
+                                       ├──────────┤
+Fase 3                                 █  █  █  █
+Tracking                               └──────────┘
+                                                   ├──────┤
+Fase 4                                             █  █  █
+Proximidad                                         └──────┘
+                                                          ├──────────┤
+Fase 5                                                    █  █  █  █  █
+DB + API                                                  └──────────┘
+                                                                       ├──────────────┤
+Fase 6                                                                 █  █  █  █  █  █
+Deploy                                                                 └──────────────┘</code></pre>
+<p><strong>TIEMPO TOTAL DE DESARROLLO: 28 semanas (~7
+meses)</strong></p>
+<hr />
+<h1 id="tiempo-de-llegada-a-producción">7. TIEMPO DE LLEGADA A
+PRODUCCIÓN</h1>
+<p>Una vez finalizado el desarrollo, el proceso de despliegue en el
+sitio minero requiere:</p>
+<h2 id="etapa-a-preparación-de-infraestructura-2-3-semanas">Etapa A —
+Preparación de Infraestructura <em>(2-3 semanas)</em></h2>
+<ul>
+<li>Evaluación de red y conectividad en el sitio.</li>
+<li>Instalación o verificación de cámaras IP con soporte RTSP.</li>
+<li>Provisioning del servidor GPU (on-premise o cloud).</li>
+<li>Configuración de la base de datos de producción.</li>
+</ul>
+<h2 id="etapa-b-instalación-y-configuración-2-semanas">Etapa B —
+Instalación y Configuración <em>(2 semanas)</em></h2>
+<ul>
+<li>Despliegue de contenedores Docker en el servidor.</li>
+<li>Conexión a las cámaras existentes del sitio.</li>
+<li>Calibración de zonas de alerta según el layout del sitio.</li>
+<li>Configuración de umbrales de confianza para el entorno real.</li>
+</ul>
+<h2 id="etapa-c-prueba-piloto-4-semanas">Etapa C — Prueba Piloto <em>(4
+semanas)</em></h2>
+<ul>
+<li>Operación paralela con supervisión humana.</li>
+<li>Ajuste fino del modelo con imágenes del sitio específico.</li>
+<li>Validación de alertas con el equipo de seguridad.</li>
+<li>Recopilación de feedback de operadores.</li>
+</ul>
+<h2 id="etapa-d-capacitación-y-go-live-1-2-semanas">Etapa D —
+Capacitación y Go-Live <em>(1-2 semanas)</em></h2>
+<ul>
+<li>Capacitación del equipo de seguridad en el uso del dashboard.</li>
+<li>Capacitación del equipo IT en mantenimiento del sistema.</li>
+<li>Documentación específica del sitio.</li>
+<li>Lanzamiento oficial.</li>
+</ul>
+<hr />
+<h2 id="resumen-timeline-producción">7.1 Resumen Timeline
+Producción</h2>
+<pre><code>┌─────────────────────────────────────────────────────────────┐
+│  Fin Desarrollo  │  Preparación  │   Prueba    │  Go-Live   │
+│   Semana 28      │   3 semanas   │  4 semanas  │  2 semanas │
+│                  │               │             │            │
+│                  ├───────────────┼─────────────┼────────────┤
+│                  │  Infra Setup  │   Piloto    │ Producción │
+└─────────────────────────────────────────────────────────────┘
+
+TOTAL POST-DESARROLLO: ~9-11 semanas hasta Go-Live completo
+TIEMPO TOTAL (Desarrollo + Producción): ~9-10 meses</code></pre>
+<hr />
+<h1 id="beneficios-para-la-empresa">8. BENEFICIOS PARA LA EMPRESA</h1>
+<h2 id="beneficios-de-seguridad">8.1 Beneficios de Seguridad</h2>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Beneficio</th>
+<th>Impacto Estimado</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Reducción de accidentes por falta de EPP</td>
+<td>60-80%</td>
+</tr>
+<tr>
+<td>Reducción de incidentes vehículo-persona</td>
+<td>40-65%</td>
+</tr>
+<tr>
+<td>Tiempo de detección de infracción</td>
+<td>&lt; 1 segundo (vs. minutos o nunca)</td>
+</tr>
+<tr>
+<td>Cobertura de monitoreo</td>
+<td>100% del tiempo (vs. 10-20% con supervisores)</td>
+</tr>
+<tr>
+<td>Documentación automática de incidentes</td>
+<td>100% de trazabilidad</td>
+</tr>
+</tbody>
+</table>
+<h2 id="beneficios-operativos">8.2 Beneficios Operativos</h2>
+<ul>
+<li><strong>Liberación de supervisores</strong> para tareas de mayor
+valor agregado.</li>
+<li><strong>Datos objetivos</strong> para toma de decisiones de
+seguridad.</li>
+<li><strong>Historial completo</strong> para auditorías regulatorias sin
+trabajo manual.</li>
+<li><strong>Identificación de zonas de riesgo</strong> basada en datos
+reales, no percepciones.</li>
+<li><strong>Reportes automáticos</strong> para cumplimiento
+normativo.</li>
+</ul>
+<h2 id="beneficios-financieros">8.3 Beneficios Financieros</h2>
+<table>
+<thead>
+<tr>
+<th>Concepto</th>
+<th>Ahorro Anual Estimado</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Reducción de accidentes graves</td>
+<td>USD 300,000 – 800,000</td>
+</tr>
+<tr>
+<td>Reducción de multas regulatorias</td>
+<td>USD 50,000 – 200,000</td>
+</tr>
+<tr>
+<td>Optimización de supervisión</td>
+<td>USD 80,000 – 150,000</td>
+</tr>
+<tr>
+<td>Reducción de primas de seguro</td>
+<td>USD 30,000 – 100,000</td>
+</tr>
+<tr>
+<td><strong>TOTAL ESTIMADO</strong></td>
+<td><strong>USD 460,000 – 1,250,000 / año</strong></td>
+</tr>
+</tbody>
+</table>
+<h2 id="beneficios-estratégicos">8.4 Beneficios Estratégicos</h2>
+<ul>
+<li><strong>Ventaja competitiva</strong> en licitaciones que requieren
+altos estándares de seguridad.</li>
+<li><strong>Certificaciones internacionales</strong> (ISO 45001) más
+accesibles con datos automatizados.</li>
+<li><strong>Cultura de seguridad</strong> — cuando los trabajadores
+saben que el sistema monitorea, el cumplimiento mejora
+naturalmente.</li>
+<li><strong>Reputación corporativa</strong> — demostrar inversión
+tecnológica en seguridad ante inversores, reguladores y
+comunidades.</li>
+</ul>
+<hr />
+<h1 id="análisis-de-roi">9. ANÁLISIS DE ROI</h1>
+<h2 id="inversión-vs.-retorno">Inversión vs. Retorno</h2>
+<pre><code>INVERSIÓN (Año 1)
+─────────────────────────────────────────────
+Desarrollo del sistema         USD  80,000
+Infraestructura (servidores)   USD  15,000
+Instalación y capacitación     USD  10,000
+Mantenimiento anual            USD  20,000
+─────────────────────────────────────────────
+TOTAL INVERSIÓN AÑO 1          USD 125,000
+
+AHORRO ESTIMADO AÑO 1
+─────────────────────────────────────────────
+Escenario conservador          USD 460,000
+Escenario optimista            USD 1,250,000
+─────────────────────────────────────────────
+
+ROI CONSERVADOR:  +268% en el primer año
+ROI OPTIMISTA:    +900% en el primer año
+PAYBACK PERIOD:   2 a 4 meses</code></pre>
+<blockquote>
+<p><em>Estimaciones basadas en datos de industria minera LATAM e
+internacional. Los valores exactos dependen del tamaño del sitio, número
+de cámaras y frecuencia histórica de accidentes.</em></p>
+</blockquote>
+<hr />
+<h1 id="tecnologías-utilizadas">10. TECNOLOGÍAS UTILIZADAS</h1>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Capa</th>
+<th>Tecnología</th>
+<th>Por qué</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Detección</td>
+<td>YOLOv8 (Ultralytics)</td>
+<td>Estado del arte en detección en tiempo real</td>
+</tr>
+<tr>
+<td>Tracking</td>
+<td>ByteTrack</td>
+<td>Mejor rendimiento en entornos con oclusión</td>
+</tr>
+<tr>
+<td>Visión</td>
+<td>OpenCV</td>
+<td>Biblioteca estándar industrial para video</td>
+</tr>
+<tr>
+<td>Deep Learning</td>
+<td>PyTorch</td>
+<td>Framework líder en investigación y producción</td>
+</tr>
+<tr>
+<td>Backend</td>
+<td>FastAPI (Python)</td>
+<td>Alta performance, documentación automática</td>
+</tr>
+<tr>
+<td>Base de Datos</td>
+<td>PostgreSQL</td>
+<td>Robustez y soporte para análisis temporal</td>
+</tr>
+<tr>
+<td>Dashboard</td>
+<td>Power BI</td>
+<td>Adoptado en la mayoría de empresas mineras</td>
+</tr>
+<tr>
+<td>Contenedores</td>
+<td>Docker + Docker Compose</td>
+<td>Deployment reproducible y escalable</td>
+</tr>
+<tr>
+<td>Cloud (futuro)</td>
+<td>AWS / Azure</td>
+<td>Escalabilidad y redundancia</td>
+</tr>
+<tr>
+<td>Lenguaje</td>
+<td>Python 3.12</td>
+<td>Ecosistema IA más maduro del mercado</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1 id="preguntas-frecuentes">11. PREGUNTAS FRECUENTES</h1>
+<p><strong>¿El sistema requiere reemplazar las cámaras
+existentes?</strong> No. Se conecta a cualquier cámara IP con soporte
+RTSP, que es el estándar de la industria. La mayoría de instalaciones
+modernas ya lo soportan.</p>
+<p><strong>¿Qué pasa si la conexión a internet falla?</strong> El
+sistema puede operar completamente on-premise (en el propio servidor del
+sitio) sin dependencia de internet. Los datos se sincronizan cuando la
+conexión se restaura.</p>
+<p><strong>¿Qué tan preciso es el sistema?</strong> Con el entrenamiento
+en el dataset de seguridad en construcción, se espera una precisión
+(mAP50) superior al 75%. Este número mejora cuando se fine-tunea el
+modelo con imágenes del sitio específico del cliente.</p>
+<p><strong>¿Puede manejar condiciones de poca luz o polvo?</strong> El
+rendimiento disminuye en condiciones extremas de visibilidad. Se puede
+complementar con cámaras infrarrojas o de baja luz. Es una limitación
+conocida que se documenta y gestiona en el plan de deployment.</p>
+<p><strong>¿El sistema puede identificar a trabajadores
+individuales?</strong> En la versión actual, el sistema clasifica
+trabajadores pero no los identifica por nombre. La integración con
+sistemas de identificación biométrica es posible en fases futuras.</p>
+<p><strong>¿Cuántas cámaras puede manejar simultáneamente?</strong>
+Depende del hardware. Con una GPU RTX 3090, el sistema puede procesar
+entre 4-8 streams de video en tiempo real (30 FPS cada uno). Para más
+cámaras, se escala horizontalmente con más servidores.</p>
+<hr />
+<h1 id="apéndice-speech-de-presentación">APÉNDICE — SPEECH DE
+PRESENTACIÓN</h1>
+<p><em>(Ver documento adjunto:
+<code>SmartMine_Vision_AI_Speech.md</code>)</em></p>
+<hr />
+<p><em>Documento preparado por: Emiliano Lescuras</em> <em>SmartMine
+Vision AI — Proyecto de Portfolio Profesional</em> <em>Contacto:
+lescurasnana@gmail.com</em></p>
+</body>
+</html>
