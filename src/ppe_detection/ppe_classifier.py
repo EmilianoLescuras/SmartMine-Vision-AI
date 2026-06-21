@@ -9,12 +9,17 @@ The unified dataset encodes compliance in two ways:
        … etc. for gloves, eyewear, respirator, reflective clothing
 
   2. Separate PPE objects  (CSS source):
-       Person (0) detected separately from hardhat (27) / safety_vest (28).
-       Compliance is inferred via IoU overlap.
+       Person (0) detected separately from hardhat (27) / safety_vest (28) /
+       mask (13). Compliance is inferred via IoU overlap.
 
 A worker is SAFE when at minimum: hardhat=True AND vest=True.
 Other violations (gloves, eyewear, …) are reported but do not flip the
 status to UNSAFE on their own — adapt thresholds to site requirements.
+
+For any worker (regardless of source class) we ALSO scan overlapping
+separate PPE detections. The embedded class signal takes precedence;
+separate detections only fill attributes still unknown. This makes the
+classifier robust to mixed-source predictions at inference time.
 """
 
 from __future__ import annotations
@@ -32,10 +37,12 @@ class ComplianceStatus(str, Enum):
     UNKNOWN = "UNKNOWN"   # generic person with no overlapping PPE found
 
 
-# Minimum PPE required for SAFE determination
 _REQUIRED = {"hardhat", "vest"}
 
-# Class-ID → (attribute, is_compliant)
+_ATTRIBUTES: tuple[str, ...] = (
+    "hardhat", "vest", "gloves", "eyewear", "respirator", "reflective", "mask",
+)
+
 _CLASS_ATTRIBUTE: dict[int, tuple[str, bool]] = {
     1:  ("hardhat",    True),
     2:  ("hardhat",    False),
@@ -51,7 +58,6 @@ _CLASS_ATTRIBUTE: dict[int, tuple[str, bool]] = {
     12: ("reflective", False),
 }
 
-# Separate PPE-item classes that indicate compliance when overlapping a person
 _SEPARATE_PPE: dict[int, str] = {
     27: "hardhat",
     28: "vest",
@@ -66,6 +72,7 @@ class WorkerCompliance:
     status:          ComplianceStatus
     attributes:      dict[str, bool | None] = field(default_factory=dict)
     violations:      list[str]              = field(default_factory=list)
+    confidence:      float                  = 0.0
 
 
 def _iou(a: tuple, b: tuple) -> float:
@@ -81,8 +88,21 @@ def _iou(a: tuple, b: tuple) -> float:
     return inter / (area_a + area_b - inter)
 
 
-def _overlaps(box_a: tuple, box_b: tuple, thresh: float = 0.05) -> bool:
-    return _iou(box_a, box_b) >= thresh
+def _contains_center(person_box: tuple, item_box: tuple) -> bool:
+    """True when the item's center lies inside the person box.
+
+    More lenient than IoU when a small PPE item (hardhat) sits at the top
+    of a tall person box — IoU stays small but the spatial relationship is
+    clear.
+    """
+    px1, py1, px2, py2 = person_box
+    ix1, iy1, ix2, iy2 = item_box
+    cx, cy = (ix1 + ix2) / 2, (iy1 + iy2) / 2
+    return px1 <= cx <= px2 and py1 <= cy <= py2
+
+
+def _overlaps(person_box: tuple, item_box: tuple, iou_thresh: float) -> bool:
+    return _iou(person_box, item_box) >= iou_thresh or _contains_center(person_box, item_box)
 
 
 def _resolve_status(attrs: dict[str, bool | None]) -> tuple[ComplianceStatus, list[str]]:
@@ -111,8 +131,9 @@ def classify_workers(
     Classify each detected worker as SAFE / UNSAFE / UNKNOWN.
 
     Workers come from any detection whose class_id is in PERSON_CLASS_IDS (0-12).
-    Separate PPE items (hardhat=27, safety_vest=28) are matched to generic
-    person (class 0) detections via IoU.
+    The embedded class fills the attribute it encodes (e.g. person_sin_casco
+    → hardhat=False). Separate PPE items (hardhat=27, safety_vest=28, mask=13)
+    fill any remaining unknown attributes via IoU / center-containment matching.
     """
     workers   = [d for d in detections if d.class_id in PERSON_CLASS_IDS]
     ppe_items = [d for d in detections if d.class_id in _SEPARATE_PPE]
@@ -121,28 +142,19 @@ def classify_workers(
 
     for worker in workers:
         cls = worker.class_id
-        attrs: dict[str, bool | None] = {
-            "hardhat":    None,
-            "vest":       None,
-            "gloves":     None,
-            "eyewear":    None,
-            "respirator": None,
-            "reflective": None,
-        }
+        attrs: dict[str, bool | None] = {a: None for a in _ATTRIBUTES}
 
-        if cls == 0:
-            # Generic person: check overlapping PPE items
-            for ppe in ppe_items:
-                attr = _SEPARATE_PPE[ppe.class_id]
-                if _overlaps(worker.bbox, ppe.bbox, iou_thresh):
-                    if attr in attrs:
-                        attrs[attr] = True
-        else:
-            # Compliance info is embedded in the class itself
-            attr_info = _CLASS_ATTRIBUTE.get(cls)
-            if attr_info:
-                attribute, is_compliant = attr_info
-                attrs[attribute] = is_compliant
+        attr_info = _CLASS_ATTRIBUTE.get(cls)
+        if attr_info is not None:
+            attribute, is_compliant = attr_info
+            attrs[attribute] = is_compliant
+
+        for ppe in ppe_items:
+            attr = _SEPARATE_PPE[ppe.class_id]
+            if attrs.get(attr) is not None:
+                continue
+            if _overlaps(worker.bbox, ppe.bbox, iou_thresh):
+                attrs[attr] = True
 
         status, violations = _resolve_status(attrs)
         results.append(WorkerCompliance(
@@ -151,6 +163,7 @@ def classify_workers(
             status=status,
             attributes=attrs,
             violations=violations,
+            confidence=getattr(worker, "confidence", 0.0),
         ))
 
     return results
