@@ -32,16 +32,17 @@ models/**/*.engine
 # ── Training run artifacts (re-generated; do not commit) ──────────────────────
 runs/
 **/runs/
-experiments/**/baseline*/weights/
-experiments/**/baseline*/*.png
-experiments/**/baseline*/*.jpg
-experiments/**/baseline*/events.out.*
+experiments/**/*
+!experiments/**/README.md
+!experiments/.gitkeep
 
 # ── Datasets (large files — document sources, do not commit raw data) ─────────
 datasets/raw/**/*
 datasets/processed/**/*
+datasets/merged/**/*
 !datasets/raw/**/README.md
 !datasets/processed/.gitkeep
+!datasets/merged/.gitkeep
 !datasets/raw/ppe/.gitkeep
 !datasets/raw/vehicles/.gitkeep
 !datasets/raw/custom/.gitkeep
