@@ -1,50 +1,78 @@
 """
-SAFE / UNSAFE classification logic for PPE compliance.
+Worker PPE compliance classification for the SmartMine unified model.
 
-A worker (Person bounding box) is classified as:
-  SAFE   — if a Hardhat AND a Safety Vest are detected overlapping or near them.
-  UNSAFE — if either PPE item is missing or a violation class is detected.
+The unified dataset encodes compliance in two ways:
+  1. Embedded in person class  (riskalert / deteccion_escenarios sources):
+       person_con_casco (1) → hardhat present
+       person_sin_casco (2) → hardhat missing  [violation]
+       person_sin_chaleco (4) → vest missing   [violation]
+       … etc. for gloves, eyewear, respirator, reflective clothing
 
-This module is independent of tracking, databases, and APIs.
+  2. Separate PPE objects  (CSS source):
+       Person (0) detected separately from hardhat (27) / safety_vest (28).
+       Compliance is inferred via IoU overlap.
+
+A worker is SAFE when at minimum: hardhat=True AND vest=True.
+Other violations (gloves, eyewear, …) are reported but do not flip the
+status to UNSAFE on their own — adapt thresholds to site requirements.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 
 from .inference import Detection
+from .utils import PERSON_CLASS_IDS
 
 
 class ComplianceStatus(str, Enum):
-    SAFE   = "SAFE"
-    UNSAFE = "UNSAFE"
+    SAFE    = "SAFE"
+    UNSAFE  = "UNSAFE"
+    UNKNOWN = "UNKNOWN"   # generic person with no overlapping PPE found
 
 
-PERSON_CLASS_ID      = 5
-HARDHAT_CLASS_ID     = 0
-VEST_CLASS_ID        = 7
-NO_HARDHAT_CLASS_ID  = 2
-NO_VEST_CLASS_ID     = 4
+# Minimum PPE required for SAFE determination
+_REQUIRED = {"hardhat", "vest"}
+
+# Class-ID → (attribute, is_compliant)
+_CLASS_ATTRIBUTE: dict[int, tuple[str, bool]] = {
+    1:  ("hardhat",    True),
+    2:  ("hardhat",    False),
+    3:  ("vest",       True),
+    4:  ("vest",       False),
+    5:  ("gloves",     True),
+    6:  ("gloves",     False),
+    7:  ("eyewear",    True),
+    8:  ("eyewear",    False),
+    9:  ("respirator", True),
+    10: ("respirator", False),
+    11: ("reflective", True),
+    12: ("reflective", False),
+}
+
+# Separate PPE-item classes that indicate compliance when overlapping a person
+_SEPARATE_PPE: dict[int, str] = {
+    27: "hardhat",
+    28: "vest",
+    13: "mask",
+}
 
 
 @dataclass
 class WorkerCompliance:
-    person_bbox: tuple[int, int, int, int]
-    status: ComplianceStatus
-    has_hardhat: bool
-    has_vest: bool
-    violations: list[str]
+    person_bbox:     tuple[int, int, int, int]
+    person_class_id: int
+    status:          ComplianceStatus
+    attributes:      dict[str, bool | None] = field(default_factory=dict)
+    violations:      list[str]              = field(default_factory=list)
 
 
-def _iou(box_a: tuple, box_b: tuple) -> float:
-    """Compute Intersection-over-Union between two (x1,y1,x2,y2) boxes."""
-    ax1, ay1, ax2, ay2 = box_a
-    bx1, by1, bx2, by2 = box_b
-    ix1 = max(ax1, bx1)
-    iy1 = max(ay1, by1)
-    ix2 = min(ax2, bx2)
-    iy2 = min(ay2, by2)
+def _iou(a: tuple, b: tuple) -> float:
+    ax1, ay1, ax2, ay2 = a
+    bx1, by1, bx2, by2 = b
+    ix1, iy1 = max(ax1, bx1), max(ay1, by1)
+    ix2, iy2 = min(ax2, bx2), min(ay2, by2)
     inter = max(0, ix2 - ix1) * max(0, iy2 - iy1)
     if inter == 0:
         return 0.0
@@ -53,9 +81,26 @@ def _iou(box_a: tuple, box_b: tuple) -> float:
     return inter / (area_a + area_b - inter)
 
 
-def _overlaps(person_box: tuple, ppe_box: tuple, iou_thresh: float = 0.05) -> bool:
-    """Return True if ppe_box overlaps the person_box above threshold."""
-    return _iou(person_box, ppe_box) >= iou_thresh
+def _overlaps(box_a: tuple, box_b: tuple, thresh: float = 0.05) -> bool:
+    return _iou(box_a, box_b) >= thresh
+
+
+def _resolve_status(attrs: dict[str, bool | None]) -> tuple[ComplianceStatus, list[str]]:
+    violations: list[str] = []
+    unknown_required = False
+
+    for attr in _REQUIRED:
+        val = attrs.get(attr)
+        if val is False:
+            violations.append(f"Falta {attr}")
+        elif val is None:
+            unknown_required = True
+
+    if violations:
+        return ComplianceStatus.UNSAFE, violations
+    if unknown_required:
+        return ComplianceStatus.UNKNOWN, []
+    return ComplianceStatus.SAFE, []
 
 
 def classify_workers(
@@ -63,47 +108,66 @@ def classify_workers(
     iou_thresh: float = 0.05,
 ) -> list[WorkerCompliance]:
     """
-    Classify each detected person as SAFE or UNSAFE.
+    Classify each detected worker as SAFE / UNSAFE / UNKNOWN.
 
-    Strategy:
-    1. Isolate Person boxes.
-    2. For each person, check if a Hardhat and Safety Vest overlap.
-    3. Also flag explicit violation classes (NO-Hardhat, NO-Safety Vest).
+    Workers come from any detection whose class_id is in PERSON_CLASS_IDS (0-12).
+    Separate PPE items (hardhat=27, safety_vest=28) are matched to generic
+    person (class 0) detections via IoU.
     """
-    persons  = [d for d in detections if d.class_id == PERSON_CLASS_ID]
-    hardhats = [d for d in detections if d.class_id == HARDHAT_CLASS_ID]
-    vests    = [d for d in detections if d.class_id == VEST_CLASS_ID]
-    no_hats  = [d for d in detections if d.class_id == NO_HARDHAT_CLASS_ID]
-    no_vests = [d for d in detections if d.class_id == NO_VEST_CLASS_ID]
+    workers   = [d for d in detections if d.class_id in PERSON_CLASS_IDS]
+    ppe_items = [d for d in detections if d.class_id in _SEPARATE_PPE]
 
     results: list[WorkerCompliance] = []
 
-    for person in persons:
-        pb = person.bbox
-        has_hardhat = any(_overlaps(pb, h.bbox, iou_thresh) for h in hardhats)
-        has_vest    = any(_overlaps(pb, v.bbox, iou_thresh) for v in vests)
+    for worker in workers:
+        cls = worker.class_id
+        attrs: dict[str, bool | None] = {
+            "hardhat":    None,
+            "vest":       None,
+            "gloves":     None,
+            "eyewear":    None,
+            "respirator": None,
+            "reflective": None,
+        }
 
-        # Explicit violation detections near the person also count as unsafe
-        viol_hat  = any(_overlaps(pb, n.bbox, iou_thresh) for n in no_hats)
-        viol_vest = any(_overlaps(pb, n.bbox, iou_thresh) for n in no_vests)
+        if cls == 0:
+            # Generic person: check overlapping PPE items
+            for ppe in ppe_items:
+                attr = _SEPARATE_PPE[ppe.class_id]
+                if _overlaps(worker.bbox, ppe.bbox, iou_thresh):
+                    if attr in attrs:
+                        attrs[attr] = True
+        else:
+            # Compliance info is embedded in the class itself
+            attr_info = _CLASS_ATTRIBUTE.get(cls)
+            if attr_info:
+                attribute, is_compliant = attr_info
+                attrs[attribute] = is_compliant
 
-        if viol_hat:
-            has_hardhat = False
-        if viol_vest:
-            has_vest = False
-
-        violations: list[str] = []
-        if not has_hardhat:
-            violations.append("Missing Hardhat")
-        if not has_vest:
-            violations.append("Missing Safety Vest")
-
-        status = ComplianceStatus.SAFE if not violations else ComplianceStatus.UNSAFE
-        results.append(WorkerCompliance(pb, status, has_hardhat, has_vest, violations))
+        status, violations = _resolve_status(attrs)
+        results.append(WorkerCompliance(
+            person_bbox=worker.bbox,
+            person_class_id=cls,
+            status=status,
+            attributes=attrs,
+            violations=violations,
+        ))
 
     return results
 
 
 def compliance_color(status: ComplianceStatus) -> tuple[int, int, int]:
-    """Return BGR color for overlaying compliance status."""
-    return (0, 255, 0) if status == ComplianceStatus.SAFE else (0, 0, 255)
+    """Return BGR overlay color for a compliance status."""
+    return {
+        ComplianceStatus.SAFE:    (0, 220, 0),
+        ComplianceStatus.UNSAFE:  (0, 0, 220),
+        ComplianceStatus.UNKNOWN: (0, 165, 255),
+    }[status]
+
+
+def compliance_summary(results: list[WorkerCompliance]) -> dict[str, int]:
+    """Return counts of SAFE / UNSAFE / UNKNOWN workers."""
+    summary = {"SAFE": 0, "UNSAFE": 0, "UNKNOWN": 0}
+    for r in results:
+        summary[r.status.value] += 1
+    return summary

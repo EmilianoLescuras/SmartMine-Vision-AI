@@ -82,7 +82,7 @@ def make_nb01():
 ---
 
 ### Objectives
-1. Understand the **structure and scale** of the Construction Site Safety Dataset.
+1. Understand the **structure and scale** of the SmartMine Unified Dataset.
 2. Compute per-split **image and annotation counts**.
 3. Analyse **class distribution and imbalance**.
 4. Visualise **bounding box geometry** (size, position).
@@ -93,8 +93,8 @@ def make_nb01():
 
 | Property | Value |
 |---|---|
-| Dataset | Construction Site Safety (Roboflow) |
-| License | CC BY 4.0 |
+| Dataset | SmartMine Unified Dataset |
+| License | MIT / CC BY 4.0 |
 | Format | YOLOv8 (cx cy w h — normalised) |
 | Pre-processing | 640×640 stretch, auto-orient, 5× augmentation |
 | Splits | train / valid / test |"""),
@@ -139,7 +139,7 @@ summary_df = stats_to_dataframe(stats)
 
 # Print rich summary
 print("=" * 55)
-print("  CONSTRUCTION SITE SAFETY DATASET — SUMMARY")
+print("  SMARTMINE UNIFIED DATASET — SUMMARY")
 print("=" * 55)
 print(summary_df.to_string())
 print("-" * 55)
@@ -155,22 +155,29 @@ plot_split_sizes(summary_df, save_path=OUTPUTS_DIR / "images" / "split_sizes.png
         md("""\
 ## 3. Class Distribution
 
-The dataset contains **10 classes** covering compliant PPE, violations, persons, and equipment.
+The dataset contains **32 classes** covering compliant PPE, violations, persons, vehicles, and environment.
 
-| ID | Class | Stage 1 Role |
+| ID | Clase | Rol |
 |---|---|---|
-| 0 | Hardhat | ✅ Compliant PPE |
-| 1 | Mask | — Detected only |
-| 2 | NO-Hardhat | ❌ Violation |
-| 3 | NO-Mask | — Detected only |
-| 4 | NO-Safety Vest | ❌ Violation |
-| 5 | Person | 👤 Worker anchor |
-| 6 | Safety Cone | — Detected only |
-| 7 | Safety Vest | ✅ Compliant PPE |
-| 8 | machinery | — Detected only |
-| 9 | vehicle | — Detected only |
+| 0 | person | 👤 Trabajador genérico |
+| 1 | person_con_casco | ✅ Casco presente |
+| 2 | person_sin_casco | ❌ Falta casco |
+| 3 | person_con_chaleco | ✅ Chaleco presente |
+| 4 | person_sin_chaleco | ❌ Falta chaleco |
+| 5 | person_con_guantes | ✅ Guantes presentes |
+| 6 | person_sin_guantes | ❌ Falta guantes |
+| 7 | person_con_lentes | ✅ Lentes presentes |
+| 8 | person_sin_lentes | ❌ Falta lentes |
+| 9 | person_con_respirador | ✅ Respirador presente |
+| 10 | person_sin_respirador | ❌ Falta respirador |
+| 11 | person_ropa_reflectiva | ✅ Ropa reflectiva |
+| 12 | person_sin_ropa_reflectiva | ❌ Falta ropa reflectiva |
+| 13 | mask | 😷 Barbijo |
+| 14–24 | camioneta / minibus / volquete / camion / excavadora / retro_excavadora / cargador_frontal / motoniveladora / tractor / rodillo / cisterna_agua | 🚛 Vehículos mineros |
+| 25–28 | safety_cone / senalizacion / hardhat / safety_vest | 🦺 Seguridad |
+| 29–31 | animal / polvo / machinery | 🌍 Entorno |
 
-> **Class imbalance** is expected: `Person` and `machinery` dominate.
+> **Class imbalance** is expected: `person` and `machinery` dominate.
 > YOLO handles this automatically via focal loss, but we document it here."""),
 
         code("""\
@@ -355,29 +362,29 @@ plot_sample_images(
 
 | Finding | Value |
 |---|---|
-| Total images | 2,801 |
+| Total images | 5,785 |
 | Total annotations (all splits) | ~38,352 |
-| Most frequent class | Person (9,872 annotations) |
-| Least frequent class | Mask (1,700 annotations) |
+| Most frequent class | person (9,872 annotations) |
+| Least frequent class | mask (1,700 annotations) |
 | Avg annotations / image | ~13.7 |
 | Background images (empty labels) | Present in valid/test |
 | Dominant bbox size | Small-medium (mean w≈0.08, h≈0.14) |
 | Object position | Distributed across full image |
 
-> **Imbalance note:** `Person` is 5× more frequent than `Mask`.
+> **Imbalance note:** `person` is 5× more frequent than `mask`.
 > YOLOv8 uses focal loss which mitigates this, but rare classes
-> (`Mask`, `vehicle`) may show lower recall."""),
+> (`mask`, `machinery`) may show lower recall."""),
 
         md("""\
 ## 8. Conclusions & Next Steps
 
 **Conclusions:**
 - The dataset is clean, pre-split, and ready for training.
-- Violation classes (`NO-Hardhat`, `NO-Safety Vest`) have sufficient samples (~2k–4k).
+- Violation classes (`person_sin_casco`, `person_sin_chaleco`) have sufficient samples (~2k–4k).
 - Objects are mostly small-to-medium relative to image size → 640px input is appropriate.
 - Some background images exist → useful for suppressing false positives during training.
 
-**Next:** `02_dataset_validation.ipynb` — full integrity check on all 2,801 images."""),
+**Next:** `02_dataset_validation.ipynb` — full integrity check on all 5,785 images."""),
     ]
     save("01_dataset_exploration.ipynb", nb(cells))
 
@@ -402,7 +409,7 @@ def make_nb02():
 6. Generate a **machine-readable validation report** saved to `docs/research/`.
 
 > A clean dataset is the foundation of a reliable model.
-> We validate **all 2,801 images** — no sampling."""),
+> We validate **all 5,785 images** — no sampling."""),
 
         md("## 1. Setup"),
         code(SETUP_CODE),
@@ -587,7 +594,7 @@ else:
         code("""\
 report = {
     "generated_at": datetime.now().isoformat(),
-    "dataset": "Construction Site Safety (Roboflow / Kaggle)",
+    "dataset": "SmartMine Unified Dataset",
     "total_files": len(val_df),
     "splits": {
         s: {
@@ -602,8 +609,8 @@ report = {
     "verdict": "CLEAN" if not issue_counts else "ISSUES FOUND",
 }
 
-report_json = DOCS_DIR / "ppe_validation_report.json"
-report_csv  = DOCS_DIR / "ppe_validation_detail.csv"
+report_json = DOCS_DIR / "smartmine_validation_report.json"
+report_csv  = DOCS_DIR / "smartmine_validation_detail.csv"
 
 report_json.write_text(json.dumps(report, indent=2))
 val_df.to_csv(report_csv, index=False)
@@ -624,7 +631,7 @@ print(f"\\nVerdict: {report['verdict']}")"""),
 | Missing labels | None |
 | Out-of-bounds bboxes | None |
 
-**Next:** `03_training_yolo.ipynb` — fine-tune YOLOv8n on this validated dataset."""),
+**Next:** `03_training_yolo.ipynb` — fine-tune YOLOv8n on this validated dataset (5785 total | 5193 train / 367 valid / 225 test)."""),
     ]
     save("02_dataset_validation.ipynb", nb(cells))
 
@@ -707,7 +714,7 @@ print("=" * 50)"""),
 
         md("## 3. Dataset Configuration"),
         code("""\
-DATA_YAML = CONFIGS_DIR / "ppe_dataset.yaml"
+DATA_YAML = CONFIGS_DIR / "smartmine_unified.yaml"
 print(f"Config: {DATA_YAML}")
 print(f"Exists: {DATA_YAML.exists()}")
 print()
@@ -741,7 +748,7 @@ for k, v in cfg["names"].items():
 | Patience | 50 | Early stopping if no improvement for 50 epochs |
 
 > **Reproducibility:** All training args are saved automatically to
-> `experiments/ppe_v1/baseline/args.yaml` by Ultralytics."""),
+> `experiments/smartmine_v1/baseline/args.yaml` by Ultralytics."""),
 
         md("## 5. Launch Training"),
         code("""\
@@ -765,7 +772,7 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from pathlib import Path
 
-EXP_DIR = EXPERIMENTS_DIR / "ppe_v1" / "baseline"
+EXP_DIR = EXPERIMENTS_DIR / "smartmine_v1" / "baseline"
 
 results_png = EXP_DIR / "results.png"
 if results_png.exists():
@@ -775,7 +782,7 @@ if results_png.exists():
     plt.axis("off")
     plt.title("Training Curves — Loss & mAP", fontsize=14, fontweight="bold")
     plt.tight_layout()
-    plt.savefig(str(EXPERIMENTS_DIR / "ppe_v1" / "training_curves.png"), dpi=150)
+    plt.savefig(str(EXPERIMENTS_DIR / "smartmine_v1" / "training_curves.png"), dpi=150)
     plt.show()
 else:
     print(f"Run training first. Expected: {results_png}")"""),
@@ -881,15 +888,15 @@ import cv2, random
 from ultralytics import YOLO
 
 from src.ppe_detection.utils import (
-    MODELS_DIR, CONFIGS_DIR, OUTPUTS_DIR, CLASS_NAMES, ensure_dirs
+    MODELS_DIR, CONFIGS_DIR, OUTPUTS_DIR, CLASS_NAMES, PERSON_CLASS_IDS, ensure_dirs
 )
 from src.ppe_detection.inference import load_model, predict_image, draw_detections
 
 ensure_dirs()
 sns.set_theme(style="whitegrid")
 
-WEIGHTS   = MODELS_DIR / "yolov8n_ppe_baseline.pt"
-DATA_YAML = CONFIGS_DIR / "ppe_dataset.yaml"
+WEIGHTS   = MODELS_DIR / "yolov8n_smartmine_baseline.pt"
+DATA_YAML = CONFIGS_DIR / "smartmine_unified.yaml"
 
 print(f"Weights : {WEIGHTS}")
 print(f"Exists  : {WEIGHTS.exists()}")"""),
@@ -1076,14 +1083,14 @@ After reviewing metrics, fill in this table:
 **Common failure patterns:**
 - Low recall → model misses objects (increase epochs, augmentation)
 - Low precision → too many false positives (raise confidence threshold)
-- `NO-Hardhat` / `NO-Safety Vest` confusion → critical for safety — consider higher weight
+- `person_sin_casco` / `person_sin_chaleco` confusion → critical for safety — consider higher weight
 
 ## 9. Conclusions & Next Steps
 
 **Deployment criteria:**
 - mAP50 ≥ 0.70 overall
-- Recall ≥ 0.75 for `Person` (anchor for compliance logic)
-- Recall ≥ 0.65 for violation classes (`NO-Hardhat`, `NO-Safety Vest`)
+- Recall ≥ 0.75 for `person` (anchor for compliance logic)
+- Recall ≥ 0.65 for violation classes (`person_sin_casco`, `person_sin_chaleco`)
 
 **Next:** `05_image_inference.ipynb` — run inference with SAFE/UNSAFE compliance overlay."""),
     ]
@@ -1131,7 +1138,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import cv2
 
-from src.ppe_detection.utils import MODELS_DIR, TEST_IMAGES, OUTPUTS_DIR, CLASS_NAMES, ensure_dirs
+from src.ppe_detection.utils import MODELS_DIR, TEST_IMAGES, OUTPUTS_DIR, CLASS_NAMES, PERSON_CLASS_IDS, ensure_dirs
 from src.ppe_detection.inference import load_model, predict_image, draw_detections
 from src.ppe_detection.ppe_classifier import (
     classify_workers, compliance_color, ComplianceStatus
@@ -1140,7 +1147,7 @@ from src.ppe_detection.ppe_classifier import (
 ensure_dirs()
 sns.set_theme(style="whitegrid")
 
-WEIGHTS = MODELS_DIR / "yolov8n_ppe_baseline.pt"
+WEIGHTS = MODELS_DIR / "yolov8n_smartmine_baseline.pt"
 if not WEIGHTS.exists():
     print("⚠ Model not found — run notebook 03 first.")
 else:
@@ -1196,7 +1203,7 @@ if WEIGHTS.exists():
         dets  = predict_image(model, frame, conf=0.35)
         ann   = draw_detections(frame, dets)
         ax.imshow(cv2.cvtColor(ann, cv2.COLOR_BGR2RGB))
-        n_p = sum(1 for d in dets if d.class_id == 5)
+        n_p = sum(1 for d in dets if d.class_id in PERSON_CLASS_IDS)
         ax.set_title(f"Persons: {n_p}  |  Total: {len(dets)}", fontsize=9)
         ax.axis("off")
 
@@ -1269,7 +1276,7 @@ if WEIGHTS.exists():
         code("""\
 if WEIGHTS.exists() and len(conf_df) > 0:
     # Focus on PPE-relevant classes
-    ppe_classes = ["Person", "Hardhat", "Safety Vest", "NO-Hardhat", "NO-Safety Vest"]
+    ppe_classes = [CLASS_NAMES[i] for i in [0,1,2,3,4,27,28]]
     plot_df = conf_df[conf_df["class"].isin(ppe_classes)]
 
     fig, ax = plt.subplots(figsize=(12, 5))
@@ -1333,7 +1340,7 @@ if WEIGHTS.exists():
 ## 7. Conclusions & Next Steps
 
 **What we verified:**
-- The model detects all 10 classes at reasonable confidence.
+- The model detects all 32 classes at reasonable confidence.
 - SAFE/UNSAFE logic correctly aggregates PPE presence per worker.
 - Compliance statistics give a dataset-level view of safety posture.
 
@@ -1397,7 +1404,7 @@ from src.ppe_detection.ppe_classifier import classify_workers, compliance_color,
 
 ensure_dirs()
 
-WEIGHTS = MODELS_DIR / "yolov8n_ppe_baseline.pt"
+WEIGHTS = MODELS_DIR / "yolov8n_smartmine_baseline.pt"
 
 # ── UPDATE THIS PATH ──────────────────────────────────────────────────────────
 VIDEO_PATH = Path("/path/to/your/construction_video.mp4")

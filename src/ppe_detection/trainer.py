@@ -25,8 +25,8 @@ def train_ppe_model(
     """
     ensure_dirs()
 
-    data_yaml = data_yaml or CONFIGS_DIR / "ppe_dataset.yaml"
-    project = project or str(EXPERIMENTS_DIR / "ppe_v1")
+    data_yaml = data_yaml or CONFIGS_DIR / "smartmine_unified.yaml"
+    project = project or str(EXPERIMENTS_DIR / "smartmine_v1")
 
     model = YOLO(base_model)
     results = model.train(
@@ -42,7 +42,7 @@ def train_ppe_model(
     )
 
     best_weights = Path(results.save_dir) / "weights" / "best.pt"
-    dest = MODELS_DIR / f"yolov8n_ppe_{name}.pt"
+    dest = MODELS_DIR / f"yolov8n_smartmine_{name}.pt"
     if best_weights.exists():
         dest.write_bytes(best_weights.read_bytes())
         print(f"Best weights copied → {dest}")

@@ -8,7 +8,7 @@ from pathlib import Path
 import pandas as pd
 
 from .utils import (
-    CLASS_NAMES,
+    CLASS_NAMES, DATASET_ROOT,
     TRAIN_IMAGES, TRAIN_LABELS,
     VALID_IMAGES, VALID_LABELS,
     TEST_IMAGES,  TEST_LABELS,
