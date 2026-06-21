@@ -945,28 +945,45 @@ if WEIGHTS.exists():
         md("## 4. Per-Class Metrics"),
         code("""\
 if WEIGHTS.exists():
+    # metrics.box.p/r/ap50/ap arrays only contain classes that appear in the
+    # test set. metrics.box.ap_class_index maps array position -> real class ID.
+    ap_class_index = metrics.box.ap_class_index
     class_rows = []
-    for i, name in metrics.names.items():
+    for arr_idx, class_id in enumerate(ap_class_index):
+        cid = int(class_id)
+        p   = float(metrics.box.p[arr_idx])
+        r   = float(metrics.box.r[arr_idx])
         class_rows.append({
-            "id"        : i,
-            "class"     : name,
-            "precision" : round(float(metrics.box.p[i]),    4),
-            "recall"    : round(float(metrics.box.r[i]),    4),
-            "f1"        : round(2 * float(metrics.box.p[i]) * float(metrics.box.r[i]) /
-                          max(float(metrics.box.p[i]) + float(metrics.box.r[i]), 1e-6), 4),
-            "AP50"      : round(float(metrics.box.ap50[i]), 4),
-            "AP50-95"   : round(float(metrics.box.ap[i]),   4),
+            "id"        : cid,
+            "class"     : metrics.names[cid],
+            "precision" : round(p, 4),
+            "recall"    : round(r, 4),
+            "f1"        : round(2 * p * r / max(p + r, 1e-6), 4),
+            "AP50"      : round(float(metrics.box.ap50[arr_idx]), 4),
+            "AP50-95"   : round(float(metrics.box.ap[arr_idx]),   4),
         })
+
+    # Classes with no test-set instances (still useful to display as N/A)
+    evaluated_ids = {int(c) for c in ap_class_index}
+    missing = [(cid, name) for cid, name in metrics.names.items() if cid not in evaluated_ids]
+    for cid, name in missing:
+        class_rows.append({
+            "id": cid, "class": name,
+            "precision": None, "recall": None, "f1": None,
+            "AP50": None, "AP50-95": None,
+        })
+
     cls_df = pd.DataFrame(class_rows).set_index("id")
-    cls_df = cls_df.sort_values("AP50", ascending=False)
+    cls_df = cls_df.sort_values("AP50", ascending=False, na_position="last")
 
     print("PER-CLASS METRICS (sorted by AP50)")
+    print(f"Classes evaluated: {len(evaluated_ids)} / {len(metrics.names)}")
     print("=" * 70)
     print(cls_df.to_string())
 
     csv_path = OUTPUTS_DIR / "images" / "per_class_metrics.csv"
     cls_df.to_csv(csv_path)
-    print(f"\\nSaved → {csv_path}")"""),
+    print(f"\\nSaved -> {csv_path}")"""),
 
         code("""\
 if WEIGHTS.exists():
