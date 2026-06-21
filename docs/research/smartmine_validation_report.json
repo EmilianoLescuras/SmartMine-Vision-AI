@@ -1,0 +1,35 @@
+{
+  "generated_at": "2026-06-21T00:44:45.090527",
+  "dataset": "SmartMine Unified Dataset",
+  "total_files": 5785,
+  "splits": {
+    "test": {
+      "images": 225,
+      "with_label": 210,
+      "background": 0,
+      "with_issues": 19
+    },
+    "train": {
+      "images": 5193,
+      "with_label": 4966,
+      "background": 0,
+      "with_issues": 323
+    },
+    "valid": {
+      "images": 367,
+      "with_label": 338,
+      "background": 0,
+      "with_issues": 30
+    }
+  },
+  "real_issue_counts": {
+    "missing_label": 271,
+    "line_0:bad_format": 98,
+    "line_1:bad_format": 53,
+    "line_2:bad_format": 22,
+    "line_3:bad_format": 6,
+    "line_4:bad_format": 3,
+    "line_5:bad_format": 3
+  },
+  "verdict": "ISSUES FOUND"
+}
