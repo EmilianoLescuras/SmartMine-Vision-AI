@@ -26,6 +26,16 @@ models/**/*.pth
 models/**/*.onnx
 models/**/*.engine
 !models/**/README.md
+# Stray pretrained weights downloaded by ultralytics
+*.pt
+
+# ── Training run artifacts (re-generated; do not commit) ──────────────────────
+runs/
+**/runs/
+experiments/**/baseline*/weights/
+experiments/**/baseline*/*.png
+experiments/**/baseline*/*.jpg
+experiments/**/baseline*/events.out.*
 
 # ── Datasets (large files — document sources, do not commit raw data) ─────────
 datasets/raw/**/*
