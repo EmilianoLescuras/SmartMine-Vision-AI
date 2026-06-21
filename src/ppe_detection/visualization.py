@@ -7,50 +7,70 @@ import random
 
 import cv2
 import matplotlib.pyplot as plt
-import matplotlib.patches as patches
 import numpy as np
 import pandas as pd
 
 from .utils import CLASS_COLORS, CLASS_NAMES
 
 
+_SPLIT_COLORS = {"train": "#4CAF50", "valid": "#2196F3", "test": "#FF9800"}
+
+
 def plot_class_distribution(df: pd.DataFrame, save_path: Path | None = None) -> None:
-    """Bar chart of annotation counts per class across splits."""
+    """Horizontal stacked-style bar chart of annotation counts per class across splits.
+
+    Horizontal layout is required because the unified schema has 32 classes
+    and vertical labels stop being readable above ~12 categories.
+    """
     splits = [c for c in ["train", "valid", "test"] if c in df.columns]
-    x = range(len(df))
-    width = 0.25
+    if not splits:
+        print("No split columns found in dataframe.")
+        return
 
-    fig, ax = plt.subplots(figsize=(14, 6))
+    df_sorted = df.sort_values("total", ascending=True) if "total" in df.columns else df
+    y = np.arange(len(df_sorted))
+    height = 0.25
+
+    fig_h = max(7, 0.32 * len(df_sorted))
+    fig, ax = plt.subplots(figsize=(12, fig_h))
+
     for i, split in enumerate(splits):
-        ax.bar([xi + i * width for xi in x], df[split], width, label=split)
+        ax.barh(
+            y + (i - 1) * height,
+            df_sorted[split],
+            height,
+            label=split,
+            color=_SPLIT_COLORS.get(split),
+        )
 
-    ax.set_xticks([xi + width for xi in x])
-    ax.set_xticklabels(df["class_name"], rotation=35, ha="right", fontsize=10)
-    ax.set_ylabel("Annotations")
-    ax.set_title("Class Distribution Across Splits")
-    ax.legend()
+    ax.set_yticks(y)
+    ax.set_yticklabels(df_sorted["class_name"], fontsize=9)
+    ax.set_xlabel("Annotations")
+    ax.set_title(f"Class Distribution Across Splits ({len(df_sorted)} classes)")
+    ax.legend(loc="lower right")
+    ax.grid(axis="x", alpha=0.3)
     plt.tight_layout()
 
     if save_path:
         plt.savefig(save_path, dpi=150)
-        print(f"Saved → {save_path}")
+        print(f"Saved -> {save_path}")
     plt.show()
 
 
 def plot_split_sizes(summary_df: pd.DataFrame, save_path: Path | None = None) -> None:
     """Horizontal bar chart of image counts per split."""
     fig, ax = plt.subplots(figsize=(7, 3))
-    colors = ["#4CAF50", "#2196F3", "#FF9800"]
+    colors = [_SPLIT_COLORS.get(s, "#888") for s in summary_df.index]
     summary_df["images"].plot(kind="barh", ax=ax, color=colors)
     ax.set_xlabel("Number of Images")
     ax.set_title("Dataset Split Sizes")
     for i, v in enumerate(summary_df["images"]):
-        ax.text(v + 10, i, str(v), va="center")
+        ax.text(v + 10, i, str(int(v)), va="center")
     plt.tight_layout()
 
     if save_path:
         plt.savefig(save_path, dpi=150)
-        print(f"Saved → {save_path}")
+        print(f"Saved -> {save_path}")
     plt.show()
 
 
@@ -95,9 +115,13 @@ def plot_sample_images(
 ) -> None:
     """Display n random images from a split with ground-truth boxes."""
     random.seed(seed)
-    all_images = list(images_dir.glob("*.jpg")) + list(images_dir.glob("*.jpeg")) + list(images_dir.glob("*.png"))
+    all_images = (
+        list(images_dir.glob("*.jpg"))
+        + list(images_dir.glob("*.jpeg"))
+        + list(images_dir.glob("*.png"))
+    )
     if not all_images:
-        print(f"⚠️  No images found in {images_dir}")
+        print(f"[WARN] No images found in {images_dir}")
         return
     samples = random.sample(all_images, min(n, len(all_images)))
 
@@ -122,5 +146,5 @@ def plot_sample_images(
 
     if save_path:
         plt.savefig(save_path, dpi=150)
-        print(f"Saved → {save_path}")
+        print(f"Saved -> {save_path}")
     plt.show()
