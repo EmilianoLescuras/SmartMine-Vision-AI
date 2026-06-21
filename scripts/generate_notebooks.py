@@ -731,7 +731,9 @@ print(f"  test  : {cfg['test']}")
 print(f"  nc    : {cfg['nc']} classes")
 print()
 print("  Classes:")
-for k, v in cfg["names"].items():
+_names = cfg["names"]
+_items = _names.items() if isinstance(_names, dict) else enumerate(_names)
+for k, v in _items:
     print(f"    {k:2d}: {v}")"""),
 
         md("""\
