@@ -213,8 +213,18 @@ SOURCES = [
 ]
 
 
-def remap_label_file(src_path: Path, dst_path: Path, class_map: dict) -> int:
-    """Rewrite a YOLO label file with remapped class IDs. Returns lines written."""
+def remap_label_file(
+    src_path: Path,
+    dst_path: Path,
+    class_map: dict,
+    skip_counter: dict[int, int] | None = None,
+    kept_counter: dict[int, int] | None = None,
+) -> int:
+    """Rewrite a YOLO label file with remapped class IDs. Returns lines written.
+
+    Updates the optional counter dicts with per-original-class kept/skipped
+    annotation totals so callers can audit coverage of the source schema.
+    """
     lines_written = 0
     with open(src_path) as f:
         lines = f.readlines()
@@ -226,7 +236,11 @@ def remap_label_file(src_path: Path, dst_path: Path, class_map: dict) -> int:
         orig_id = int(parts[0])
         new_id = class_map.get(orig_id)
         if new_id is None:
-            continue  # skip unmapped / explicitly excluded class
+            if skip_counter is not None:
+                skip_counter[orig_id] = skip_counter.get(orig_id, 0) + 1
+            continue
+        if kept_counter is not None:
+            kept_counter[orig_id] = kept_counter.get(orig_id, 0) + 1
         out.append(f"{new_id} {' '.join(parts[1:])}\n")
         lines_written += 1
     if out:
@@ -237,14 +251,18 @@ def remap_label_file(src_path: Path, dst_path: Path, class_map: dict) -> int:
 
 
 def merge():
-    print(f"\nMerging {len(SOURCES)} datasets → {MERGED_DIR}\n")
+    print(f"\nMerging {len(SOURCES)} datasets -> {MERGED_DIR}\n")
 
     counts: dict[str, dict[str, int]] = {s: {"images": 0, "labels": 0} for s in ["train", "valid", "test"]}
+    per_source_stats: dict[str, dict[str, dict[int, int]]] = {}
 
     for source in SOURCES:
         name      = source["name"]
         src_root  = Path(source["path"])
         class_map = source["class_map"]
+        skip_counter: dict[int, int] = {}
+        kept_counter: dict[int, int] = {}
+        per_source_stats[name] = {"kept": kept_counter, "skipped": skip_counter}
         print(f"  [{name}]  {src_root}")
 
         for split in source["splits"]:
@@ -262,7 +280,6 @@ def merge():
                 if img_file.suffix.lower() not in {".jpg", ".jpeg", ".png"}:
                     continue
 
-                # Prefix filename with source name to avoid collisions
                 new_stem  = f"{name}_{img_file.stem}"
                 dst_img   = img_dst / (new_stem + img_file.suffix)
                 lbl_file  = lbl_src / (img_file.stem + ".txt")
@@ -272,11 +289,13 @@ def merge():
                 counts[split]["images"] += 1
 
                 if lbl_file.exists():
-                    written = remap_label_file(lbl_file, dst_lbl, class_map)
+                    written = remap_label_file(
+                        lbl_file, dst_lbl, class_map,
+                        skip_counter=skip_counter, kept_counter=kept_counter,
+                    )
                     if written:
                         counts[split]["labels"] += 1
 
-    # Write unified data.yaml
     yaml_path = MERGED_DIR / "data.yaml"
     yaml_content = {
         "path":  str(MERGED_DIR),
@@ -289,18 +308,30 @@ def merge():
     with open(yaml_path, "w") as f:
         yaml.dump(yaml_content, f, allow_unicode=True, sort_keys=False)
 
-    # Also write to configs/yaml/
     cfg_yaml = PROJECT_ROOT / "configs/yaml/smartmine_unified.yaml"
     shutil.copy2(yaml_path, cfg_yaml)
 
-    print("\n── Results ──────────────────────────")
+    print("\n-- Split totals --")
     total_imgs = 0
     for split, c in counts.items():
         print(f"  {split:6s}: {c['images']:4d} imgs  {c['labels']:4d} labels")
         total_imgs += c["images"]
     print(f"  TOTAL : {total_imgs} images")
-    print(f"\n  Unified YAML → {cfg_yaml}")
-    print(f"  Merged data  → {MERGED_DIR}")
+
+    print("\n-- Per-source coverage --")
+    for name, stats in per_source_stats.items():
+        kept = sum(stats["kept"].values())
+        skipped = sum(stats["skipped"].values())
+        total = kept + skipped
+        pct = (100.0 * kept / total) if total else 0.0
+        print(f"  [{name}] kept {kept:5d} / {total:5d} annotations ({pct:.1f}%)")
+        if stats["skipped"]:
+            top = sorted(stats["skipped"].items(), key=lambda kv: -kv[1])[:5]
+            preview = ", ".join(f"id{k}={v}" for k, v in top)
+            print(f"           skipped breakdown (top 5 ids): {preview}")
+
+    print(f"\n  Unified YAML -> {cfg_yaml}")
+    print(f"  Merged data  -> {MERGED_DIR}")
     print("\nDone.\n")
 
 
