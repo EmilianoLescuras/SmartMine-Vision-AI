@@ -1195,8 +1195,8 @@ if WEIGHTS.exists():
     for i, w in enumerate(workers):
         icon = '✅' if w.status == ComplianceStatus.SAFE else '❌'
         print(f"  Worker {i+1}: {icon} {w.status.value}")
-        print(f"    Hardhat : {w.has_hardhat}")
-        print(f"    Vest    : {w.has_vest}")
+        print(f"    Hardhat : {w.attributes.get('hardhat')}")
+        print(f"    Vest    : {w.attributes.get('vest')}")
         if w.violations:
             print(f"    ⚠ Violations: {', '.join(w.violations)}")
 
