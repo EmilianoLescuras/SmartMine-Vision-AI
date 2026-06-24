@@ -8,7 +8,9 @@ dependencies:
   - python=3.12
   - pytorch>=2.3.0
   - torchvision>=0.18.0
-  - cudatoolkit=11.8          # Remove if CPU-only
+  # cudatoolkit: omitted — PyTorch from the 'pytorch' channel ships its own CUDA
+  # libs. Add 'pytorch-cuda=12.1' here only if conda resolves the wrong variant.
+  # MPS (Apple Silicon) and CPU-only setups work without any cudatoolkit entry.
   - numpy>=1.26.0
   - pandas>=2.2.0
   - scipy>=1.13.0

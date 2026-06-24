@@ -14,7 +14,7 @@ KERNEL = {
     "language": "python",
     "name": "python3",
 }
-LANG_INFO = {"name": "python", "version": "3.14.2"}
+LANG_INFO = {"name": "python", "version": "3.12"}
 
 
 def cid():
@@ -622,16 +622,19 @@ print(f"\\nVerdict: {report['verdict']}")"""),
         md("""\
 ## 8. Conclusions & Next Steps
 
+> **Draft** — values below reflect results from running this notebook.
+> The known dataset state has some label issues (see `docs/research/smartmine_validation_report.json`).
+
 | Result | Value |
 |---|---|
-| Dataset integrity | ✅ Clean |
-| Background images | Normal — kept for training |
-| Duplicate images | None detected |
-| Corrupt images | None |
-| Missing labels | None |
-| Out-of-bounds bboxes | None |
+| Dataset integrity | Run notebook to verify |
+| Background images | Run notebook to verify |
+| Duplicate images | Run notebook to verify |
+| Corrupt images | Run notebook to verify |
+| Missing labels | Run notebook to verify |
+| Out-of-bounds bboxes | Run notebook to verify |
 
-**Next:** `03_training_yolo.ipynb` — fine-tune YOLOv8n on this validated dataset (5785 total | 5193 train / 367 valid / 225 test)."""),
+**Next:** `03_training_yolo.ipynb` — fine-tune YOLOv8n on the validated dataset."""),
     ]
     save("02_dataset_validation.ipynb", nb(cells))
 
@@ -1591,19 +1594,21 @@ if VIDEO_PATH.exists() and WEIGHTS.exists():
 > For CPU deployments: use `yolov8n.onnx` export with OpenVINO or ONNX Runtime
 > for 2–3× speed improvement.
 
-## 7. Stage 1 — Complete ✅
+## 7. Stage 1 — Pipeline Status
 
 **What Stage 1 delivers:**
 
 | Component | Status |
 |---|---|
-| Dataset explored & validated | ✅ |
-| YOLOv8n fine-tuned (100 epochs) | ✅ |
-| Quantitative evaluation (mAP50, PR, CM) | ✅ |
-| Image inference + compliance overlay | ✅ |
-| Video inference + real-time FPS | ✅ |
-| SAFE/UNSAFE worker classification | ✅ |
-| All outputs saved to `outputs/` | ✅ |
+| Dataset explored & validated | ✅ pipeline implemented |
+| YOLOv8n fine-tuned (100 epochs) | ⏳ pending — SPEC-003 |
+| Quantitative evaluation (mAP50, PR, CM) | ⏳ pending — SPEC-003 |
+| Image inference + compliance overlay | ✅ pipeline implemented |
+| Video inference + real-time FPS | ✅ pipeline implemented |
+| SAFE/UNSAFE worker classification | ✅ pipeline implemented |
+| All outputs saved to `outputs/` | ✅ pipeline implemented |
+
+> Training and evaluation results will be populated once SPEC-003 (Model Training & Validation) is complete.
 
 **Stage 2 — Vehicle Detection** begins next:
 - Dataset: BDD100K / COCO
