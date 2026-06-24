@@ -1,6 +1,6 @@
 # SPEC-001 — Detection & Compliance Pipeline (Fase 1)
 
-Status: draft · partially implemented (4/6 acceptance criteria)
+Status: implemented · all acceptance criteria passing (6/6)
 Created: 2026-06-21 · Owner: TBD · Phase: 1
 
 ---
@@ -40,10 +40,10 @@ entrenamiento, el fine-tuning y el objetivo de mAP son un hito separado
 | AC-2 | `classify_workers` asigna SAFE/UNSAFE/UNKNOWN con required = {hardhat, vest} | ✅ implementado |
 | AC-3 | Inferencia de imagen y video guardan overlay en `outputs/` | ✅ implementado |
 | AC-4 | Esquema de 32 clases y paths centralizados en `utils.py` | ✅ implementado |
-| AC-5 | **Smoke test**: el pipeline corre end-to-end con `yolov8n.pt` genérico (COCO, sin fine-tuning) sobre ≥1 imagen y produce overlay + compliance **sin crashear** | 🔴 falla (nunca ejecutado; depende de SPEC-002 AC-1/AC-2) |
-| AC-6 | Los notebooks generados importan solo API vigente de `src/` (sin `has_hardhat`/`has_vest`) | 🔴 roto (`generate_notebooks.py:1198`) |
+| AC-5 | **Smoke test**: el pipeline corre end-to-end con `yolov8n.pt` genérico (COCO, sin fine-tuning) sobre ≥1 imagen y produce overlay + compliance **sin crashear** | ✅ implementado (`scripts/smoke_test.py`) |
+| AC-6 | Los notebooks generados importan solo API vigente de `src/` (sin `has_hardhat`/`has_vest`) | ✅ implementado (`generate_notebooks.py` corregido) |
 
-La fase se considera **implementada** cuando AC-1…AC-6 pasan. Hoy: **4/6**.
+La fase se considera **implementada** cuando AC-1…AC-6 pasan. **6/6 ✅**
 
 > El **smoke test (AC-5)** es deliberadamente independiente del modelo: usa el
 > `yolov8n.pt` pre-entrenado de COCO. Valida que el *pipeline* produce una salida
@@ -72,8 +72,8 @@ La fase se considera **implementada** cuando AC-1…AC-6 pasan. Hoy: **4/6**.
   ¿Se quita del esquema o se cubre solo por overlap de `safety_vest`?
 - Umbral IoU 0.05 + center-containment sin validación cuantitativa.
 
-## Tasks (para cerrar la fase)
+## Tasks (completadas)
 
-- [ ] Arreglar `generate_notebooks.py` (`has_hardhat`/`has_vest` → `status`/`attributes`/`violations`) y regenerar → AC-6 (dep: SPEC-002 AC-1).
-- [ ] Portabilidad de YAML/paths para poder ejecutar → AC-5 (dep: SPEC-002 AC-2).
-- [ ] Escribir y correr el smoke test con `yolov8n.pt` (AC-5).
+- [x] Arreglar `generate_notebooks.py` (`has_hardhat`/`has_vest` → `attributes.get(...)`) y regenerar → AC-6.
+- [x] Portabilidad de YAML/paths: `configs/yaml/smartmine_unified.yaml` y `merge_datasets.py` usan rutas relativas → AC-5.
+- [x] Escribir y correr el smoke test con `yolov8n.pt` (`scripts/smoke_test.py`) → AC-5.

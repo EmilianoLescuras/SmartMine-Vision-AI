@@ -296,20 +296,22 @@ def merge():
                     if written:
                         counts[split]["labels"] += 1
 
-    yaml_path = MERGED_DIR / "data.yaml"
-    yaml_content = {
-        "path":  str(MERGED_DIR),
+    _class_block = {
         "train": "train/images",
         "val":   "valid/images",
         "test":  "test/images",
         "nc":    len(UNIFIED_CLASSES),
         "names": UNIFIED_CLASSES,
     }
+
+    yaml_path = MERGED_DIR / "data.yaml"
     with open(yaml_path, "w") as f:
-        yaml.dump(yaml_content, f, allow_unicode=True, sort_keys=False)
+        yaml.dump({"path": "."} | _class_block, f, allow_unicode=True, sort_keys=False)
 
     cfg_yaml = PROJECT_ROOT / "configs/yaml/smartmine_unified.yaml"
-    shutil.copy2(yaml_path, cfg_yaml)
+    with open(cfg_yaml, "w") as f:
+        yaml.dump({"path": "../../datasets/merged/smartmine_v1"} | _class_block,
+                  f, allow_unicode=True, sort_keys=False)
 
     print("\n-- Split totals --")
     total_imgs = 0

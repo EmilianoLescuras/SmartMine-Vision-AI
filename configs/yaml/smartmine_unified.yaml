@@ -1,4 +1,4 @@
-path: /Users/nanolescuras/SmartMine-Vision-AI/datasets/merged/smartmine_v1
+path: ../../datasets/merged/smartmine_v1
 train: train/images
 val: valid/images
 test: test/images
