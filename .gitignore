@@ -46,6 +46,10 @@ datasets/merged/**/*
 !datasets/raw/ppe/.gitkeep
 !datasets/raw/vehicles/.gitkeep
 !datasets/raw/custom/.gitkeep
+!datasets/raw/vehicles/construction_vehicles/.gitkeep
+!datasets/raw/vehicles/mining_area_detection/.gitkeep
+!datasets/raw/vehicles/riskalert/.gitkeep
+!datasets/raw/vehicles/riskalertai/.gitkeep
 
 # ── Outputs ───────────────────────────────────────────────────────────────────
 outputs/images/**/*
