@@ -44,7 +44,7 @@ SOURCES = {
     "riskalertai": {
         "workspace": "personal-q02wc",
         "project":   "riskalertai-mining",
-        "version":   1,
+        "version":   10,
         "url":       "https://universe.roboflow.com/personal-q02wc/riskalertai-mining",
     },
 }
