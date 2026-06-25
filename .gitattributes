@@ -1,0 +1,10 @@
+# Strip notebook outputs and execution counts at staging time.
+# This prevents merge conflicts caused by execution_count and outputs
+# diverging between collaborators who run the same notebook independently.
+#
+# Setup (once per local clone):
+#   make dev-setup
+#   - OR -
+#   pip install nbstripout && nbstripout --install
+*.ipynb filter=nbstripout
+*.ipynb diff=ipynb
