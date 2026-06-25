@@ -46,9 +46,14 @@ datasets/merged/**/*
 !datasets/raw/ppe/.gitkeep
 !datasets/raw/vehicles/.gitkeep
 !datasets/raw/custom/.gitkeep
+# Un-ignore vehicle source subdirectories (directories first, then .gitkeep)
+!datasets/raw/vehicles/construction_vehicles/
 !datasets/raw/vehicles/construction_vehicles/.gitkeep
+!datasets/raw/vehicles/mining_area_detection/
 !datasets/raw/vehicles/mining_area_detection/.gitkeep
+!datasets/raw/vehicles/riskalert/
 !datasets/raw/vehicles/riskalert/.gitkeep
+!datasets/raw/vehicles/riskalertai/
 !datasets/raw/vehicles/riskalertai/.gitkeep
 
 # ── Outputs ───────────────────────────────────────────────────────────────────
