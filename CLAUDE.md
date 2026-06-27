@@ -3,6 +3,37 @@ For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan
 <!-- SPECKIT END -->
 
+## Setup local obligatorio
+
+Antes de trabajar en este repo, cada colaborador (humano o agente) debe correr:
+
+```bash
+make dev-setup
+```
+
+Esto instala dos cosas críticas:
+
+- **nbstripout**: filtro de git que elimina outputs y execution counts de los
+  notebooks antes de cada commit. Sin esto, los notebooks commitiados incluyen
+  outputs que generan conflictos de merge entre colaboradores.
+
+- **pull.autostash**: config de git que hace que `git pull` guarde y restaure
+  automáticamente los cambios locales. Sin esto, ejecutar un notebook y luego
+  hacer `git pull` falla porque git detecta el notebook como modificado y se
+  niega a mergear. El workaround sin esta config es `git stash && git pull &&
+  git stash drop`, que es engorroso y propenso a errores.
+
+Si un colaborador reporta que `git pull` falla con mensajes del estilo
+_"your local changes would be overwritten by merge"_ en notebooks, la causa
+es que no corrió `make dev-setup`. La solución inmediata es:
+
+```bash
+git fetch origin && git reset --hard origin/<rama>
+make dev-setup
+```
+
+---
+
 ## Spec-Kit Workflow
 
 Este proyecto usa spec-driven development. Lee `.specify/memory/constitution.md`

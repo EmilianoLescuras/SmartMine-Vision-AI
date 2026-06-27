@@ -9,9 +9,11 @@ help:
 dev-setup:
 	pip install nbstripout
 	nbstripout --install
+	git config pull.autostash true
 	@echo ""
-	@echo "nbstripout installed. Notebooks will be committed without outputs or"
-	@echo "execution counts — merge conflicts on notebook metadata are now impossible."
+	@echo "Dev setup complete:"
+	@echo "  - nbstripout: notebooks committed without outputs (no merge conflicts)"
+	@echo "  - pull.autostash: git pull handles dirty notebooks automatically"
 
 generate-notebooks:
 	python scripts/generate_notebooks.py
