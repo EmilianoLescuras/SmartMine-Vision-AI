@@ -177,6 +177,35 @@ conda activate smartmine
 pip install -r requirements.txt
 ```
 
+### One-time setup for notebook contributors
+
+Run this once per local clone to install the `nbstripout` git filter.
+It ensures notebooks are always committed without outputs or execution
+counts, preventing merge conflicts on notebook metadata:
+
+```bash
+make dev-setup
+```
+
+After this, `git add` on any `.ipynb` file will automatically strip
+outputs before staging. Your local notebook still shows outputs while
+running — only what reaches the index (and therefore the remote) is clean.
+
+### Downloading datasets
+
+See [`datasets/README.md`](datasets/README.md) and
+[`docs/specs/SPEC-004-vehicle-dataset.md`](docs/specs/SPEC-004-vehicle-dataset.md)
+for dataset sources and download instructions.
+
+```bash
+# Copy and fill in your Roboflow API key
+cp .env.example .env
+# Edit .env and set ROBOFLOW_API_KEY
+
+# Download all source datasets
+python scripts/download_datasets.py
+```
+
 ---
 
 ## License
