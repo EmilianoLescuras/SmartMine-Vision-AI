@@ -44,6 +44,8 @@ datasets/merged/**/*
 !datasets/processed/.gitkeep
 !datasets/merged/.gitkeep
 !datasets/raw/ppe/.gitkeep
+!datasets/raw/ppe/css-data/
+!datasets/raw/ppe/css-data/.gitkeep
 !datasets/raw/vehicles/.gitkeep
 !datasets/raw/custom/.gitkeep
 # Un-ignore vehicle source subdirectories (directories first, then .gitkeep)

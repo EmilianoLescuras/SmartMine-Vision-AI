@@ -1,5 +1,5 @@
 """
-Download all SmartMine vehicle datasets from Roboflow Universe.
+Download all SmartMine datasets from Roboflow Universe.
 
 Usage:
     python scripts/download_datasets.py
@@ -19,42 +19,69 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# ── Path resolution ───────────────────────────────────────────────────────────
+_here = Path(__file__).resolve().parent
+PROJECT_ROOT = _here.parent
+
 # ── Source catalogue ──────────────────────────────────────────────────────────
-# Keys are local aliases used as directory names under datasets/raw/vehicles/.
+# 'dest' is relative to PROJECT_ROOT.
 # 'version' is the Roboflow dataset version number to download.
 SOURCES = {
+    # ── PPE ──────────────────────────────────────────────────────────────────
+    "css-data": {
+        "workspace": "roboflow-100",
+        "project":   "construction-site-safety",
+        "version":   1,
+        "url":       "https://universe.roboflow.com/roboflow-100/construction-site-safety",
+        "dest":      "datasets/raw/ppe/css-data",
+    },
+    # ── Vehicles ─────────────────────────────────────────────────────────────
     "construction_vehicles": {
         "workspace": "0925",
         "project":   "construction-vehicle-inspection",
         "version":   1,
         "url":       "https://universe.roboflow.com/0925/construction-vehicle-inspection",
+        "dest":      "datasets/raw/vehicles/construction_vehicles",
     },
     "mining_area_detection": {
         "workspace": "septiana-s-workspace",
         "project":   "mining-area-vehicle-detection",
         "version":   1,
         "url":       "https://universe.roboflow.com/septiana-s-workspace/mining-area-vehicle-detection",
+        "dest":      "datasets/raw/vehicles/mining_area_detection",
     },
     "riskalert": {
         "workspace": "personal-q02wc",
         "project":   "riskalert-mining",
         "version":   1,
         "url":       "https://universe.roboflow.com/personal-q02wc/riskalert-mining",
+        "dest":      "datasets/raw/vehicles/riskalert",
     },
     "riskalertai": {
         "workspace": "personal-q02wc",
         "project":   "riskalertai-mining",
         "version":   10,
         "url":       "https://universe.roboflow.com/personal-q02wc/riskalertai-mining",
+        "dest":      "datasets/raw/vehicles/riskalertai",
     },
+    # ── Pending (workspace/project/version unknown — ask Emiliano) ───────────
+    # "deteccion_escenarios": {
+    #     "workspace": "???",
+    #     "project":   "???",
+    #     "version":   1,
+    #     "url":       "https://universe.roboflow.com/???",
+    #     "dest":      "datasets/raw/vehicles/deteccion_escenarios",
+    # },
+    # "mining_area": {
+    #     "workspace": "???",
+    #     "project":   "???",
+    #     "version":   1,
+    #     "url":       "https://universe.roboflow.com/???",
+    #     "dest":      "datasets/raw/vehicles/mining_area",
+    # },
 }
 
 DOWNLOAD_FORMAT = "yolov8"
-
-# ── Path resolution ───────────────────────────────────────────────────────────
-_here = Path(__file__).resolve().parent
-PROJECT_ROOT = _here.parent
-VEHICLES_DIR = PROJECT_ROOT / "datasets" / "raw" / "vehicles"
 
 
 def _check_api_key() -> str:
@@ -80,12 +107,12 @@ def _is_downloaded(dest: Path) -> bool:
 def download_source(alias: str, meta: dict, api_key: str) -> bool:
     """Download a single dataset. Returns True on success, False on error."""
     try:
-        from roboflow import Roboflow  # deferred — not needed if data exists
+        from roboflow import Roboflow
     except ImportError:
         print("[ERROR] roboflow package not found. Run: pip install roboflow")
         sys.exit(1)
 
-    dest = VEHICLES_DIR / alias
+    dest = PROJECT_ROOT / meta["dest"]
 
     if _is_downloaded(dest):
         print(f"  [SKIP] {alias} — already present at {dest}")
@@ -110,11 +137,10 @@ def download_source(alias: str, meta: dict, api_key: str) -> bool:
 
 
 def main() -> None:
-    print("SmartMine — Vehicle Dataset Download")
+    print("SmartMine — Dataset Download")
     print("=" * 50)
 
     api_key = _check_api_key()
-    VEHICLES_DIR.mkdir(parents=True, exist_ok=True)
 
     results = {}
     for alias, meta in SOURCES.items():
