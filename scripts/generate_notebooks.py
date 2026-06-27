@@ -1,13 +1,14 @@
 """
-Generate all Stage 1 notebooks for SmartMine Vision AI.
+Generate all SmartMine Vision AI notebooks.
 Run from project root: python3 scripts/generate_notebooks.py
 """
 
+import hashlib
 import json
-import uuid
 from pathlib import Path
 
 NB_DIR = Path("notebooks/01_ppe_detection")
+NB_DIR_02 = Path("notebooks/02_vehicle_detection")
 
 KERNEL = {
     "display_name": "Python 3",
@@ -17,14 +18,15 @@ KERNEL = {
 LANG_INFO = {"name": "python", "version": "3.12"}
 
 
-def cid():
-    return str(uuid.uuid4())[:8]
+def cid(source: str) -> str:
+    """Deterministic 8-char cell ID derived from cell source content."""
+    return hashlib.md5(source.encode()).hexdigest()[:8]
 
 
 def md(source: str) -> dict:
     return {
         "cell_type": "markdown",
-        "id": cid(),
+        "id": cid(source),
         "metadata": {},
         "source": source.strip(),
     }
@@ -33,7 +35,7 @@ def md(source: str) -> dict:
 def code(source: str) -> dict:
     return {
         "cell_type": "code",
-        "id": cid(),
+        "id": cid(source),
         "execution_count": None,
         "metadata": {},
         "outputs": [],
@@ -50,10 +52,10 @@ def nb(cells: list) -> dict:
     }
 
 
-def save(name: str, notebook: dict) -> None:
-    path = NB_DIR / name
+def save(name: str, notebook: dict, nb_dir: Path = NB_DIR) -> None:
+    path = nb_dir / name
     path.write_text(json.dumps(notebook, indent=1, ensure_ascii=False))
-    print(f"  Written: {path.name}")
+    print(f"  Written: {path}")
 
 
 # ── SETUP BLOCK (shared across all notebooks) ─────────────────────────────────
@@ -1618,6 +1620,430 @@ if VIDEO_PATH.exists() and WEIGHTS.exists():
     save("06_video_inference.ipynb", nb(cells))
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+# MODULE 02 — VEHICLE DETECTION
+# ══════════════════════════════════════════════════════════════════════════════
+
+SETUP_CODE_02 = """\
+import sys, os, warnings
+from pathlib import Path
+warnings.filterwarnings("ignore")
+
+_cwd = Path().resolve()
+PROJECT_ROOT = _cwd
+while not (PROJECT_ROOT / "src").exists() and PROJECT_ROOT.parent != PROJECT_ROOT:
+    PROJECT_ROOT = PROJECT_ROOT.parent
+sys.path.insert(0, str(PROJECT_ROOT))
+
+VEHICLES_DIR = PROJECT_ROOT / "datasets" / "raw" / "vehicles"
+print(f"Project root : {PROJECT_ROOT}")
+print(f"Vehicles dir : {VEHICLES_DIR}")"""
+
+# ── SOURCES shared between notebooks ─────────────────────────────────────────
+SOURCES_DICT = """\
+SOURCES = {
+    "construction_vehicles": {
+        "workspace": "0925",
+        "project":   "construction-vehicle-inspection",
+        "version":   1,
+        "url": "https://universe.roboflow.com/0925/construction-vehicle-inspection",
+    },
+    "mining_area_detection": {
+        "workspace": "septiana-s-workspace",
+        "project":   "mining-area-vehicle-detection",
+        "version":   1,
+        "url": "https://universe.roboflow.com/septiana-s-workspace/mining-area-vehicle-detection",
+    },
+    "riskalert": {
+        "workspace": "personal-q02wc",
+        "project":   "riskalert-mining",
+        "version":   1,
+        "url": "https://universe.roboflow.com/personal-q02wc/riskalert-mining",
+    },
+    "riskalertai": {
+        "workspace": "personal-q02wc",
+        "project":   "riskalertai-mining",
+        "version":   1,
+        "url": "https://universe.roboflow.com/personal-q02wc/riskalertai-mining",
+    },
+}"""
+
+
+# ── NOTEBOOK 02-01 — DATASET DOWNLOAD ────────────────────────────────────────
+def make_nb02_01():
+    cells = [
+        md("""\
+# 📥 01 — Vehicle Dataset Download
+## SmartMine Vision AI · Module 2: Vehicle Detection
+
+---
+
+### Objectives
+1. Verify the four Roboflow Universe vehicle datasets are available locally.
+2. Download any missing dataset automatically (requires `ROBOFLOW_API_KEY`).
+3. Validate the downloaded directory structure.
+4. Document sources and license information.
+
+---
+
+### Dataset Sources
+
+| Alias | URL | Format |
+|---|---|---|
+| `construction_vehicles` | [universe.roboflow.com/0925/construction-vehicle-inspection](https://universe.roboflow.com/0925/construction-vehicle-inspection) | YOLOv8 |
+| `mining_area_detection` | [universe.roboflow.com/septiana-s-workspace/mining-area-vehicle-detection](https://universe.roboflow.com/septiana-s-workspace/mining-area-vehicle-detection) | YOLOv8 |
+| `riskalert` | [universe.roboflow.com/personal-q02wc/riskalert-mining](https://universe.roboflow.com/personal-q02wc/riskalert-mining) | YOLOv8 |
+| `riskalertai` | [universe.roboflow.com/personal-q02wc/riskalertai-mining](https://universe.roboflow.com/personal-q02wc/riskalertai-mining) | YOLOv8 |
+
+> All four are public datasets on Roboflow Universe.
+> A **free** Roboflow account with API key is sufficient to download them.
+> Get yours at [app.roboflow.com](https://app.roboflow.com/) → Settings → API Keys."""),
+
+        md("## 1. Setup"),
+        code(SETUP_CODE_02),
+        code("""\
+from dotenv import load_dotenv
+load_dotenv(PROJECT_ROOT / ".env")
+
+""" + SOURCES_DICT),
+
+        md("## 2. Check What Is Already Present"),
+        code("""\
+def images_in(path: Path) -> int:
+    return sum(1 for _ in path.rglob("*.jpg")) + sum(1 for _ in path.rglob("*.png"))
+
+print("Dataset availability check")
+print("=" * 60)
+missing = []
+for alias, meta in SOURCES.items():
+    dest = VEHICLES_DIR / alias
+    n = images_in(dest) if dest.exists() else 0
+    status = f"OK  ({n:,} images)" if n > 0 else "MISSING"
+    print(f"  {alias:<30} {status}")
+    if n == 0:
+        missing.append(alias)
+
+print()
+if not missing:
+    print("All datasets are present. Skip to section 4.")
+else:
+    print(f"Missing: {missing}")
+    print("Run section 3 to download.")"""),
+
+        md("## 3. Download Missing Datasets"),
+        code("""\
+import subprocess, sys
+
+if missing:
+    api_key = os.environ.get("ROBOFLOW_API_KEY", "").strip()
+    if not api_key or api_key == "your_roboflow_api_key_here":
+        print(
+            "ROBOFLOW_API_KEY not set.\\n"
+            "1. Get a free key at https://app.roboflow.com/ → Settings → API Keys\\n"
+            "2. Add it to .env: ROBOFLOW_API_KEY=<your_key>\\n"
+            "3. Re-run this cell.\\n"
+            "\\nSkipping download."
+        )
+    else:
+        print("Downloading missing datasets...")
+        result = subprocess.run(
+            [sys.executable, str(PROJECT_ROOT / "scripts" / "download_datasets.py")],
+            capture_output=False,
+        )
+        if result.returncode != 0:
+            print("\\n[WARN] Some datasets may not have downloaded correctly.")
+            print("Check the output above and verify version numbers in scripts/download_datasets.py.")
+else:
+    print("Nothing to download.")"""),
+
+        md("## 4. Validate Directory Structure"),
+        code("""\
+print("Post-download validation")
+print("=" * 60)
+
+all_ok = True
+for alias, meta in SOURCES.items():
+    dest = VEHICLES_DIR / alias
+    n = images_in(dest) if dest.exists() else 0
+    yaml_files = list(dest.rglob("*.yaml")) if dest.exists() else []
+    has_yaml = bool(yaml_files)
+
+    ok = n > 0
+    all_ok = all_ok and ok
+    status = "OK" if ok else "MISSING"
+    yaml_status = f"data.yaml found" if has_yaml else "no data.yaml yet"
+    print(f"  {alias:<30} [{status}]  {n:,} images  {yaml_status}")
+    if ok:
+        print(f"    URL: {meta['url']}")
+
+print()
+if all_ok:
+    print("All four datasets are available. Proceed to 02_dataset_exploration.ipynb.")
+else:
+    print("Some datasets are still missing. Check your ROBOFLOW_API_KEY and retry.")"""),
+
+        md("""\
+## 5. License Summary
+
+| Dataset | License | Attribution |
+|---|---|---|
+| construction_vehicles | CC BY 4.0 | Roboflow Universe — workspace `0925` |
+| mining_area_detection | CC BY 4.0 | Roboflow Universe — Septiana S. |
+| riskalert | CC BY 4.0 | Roboflow Universe — personal-q02wc |
+| riskalertai | CC BY 4.0 | Roboflow Universe — personal-q02wc |
+
+> Verify the exact license on each project's Roboflow Universe page before
+> any commercial use. CC BY 4.0 requires attribution.
+
+## 6. Next Steps
+
+Run `notebooks/02_vehicle_detection/02_dataset_exploration.ipynb` to
+explore class distributions and image statistics for the downloaded sources."""),
+    ]
+    save("01_dataset_download.ipynb", nb(cells), NB_DIR_02)
+
+
+# ── NOTEBOOK 02-02 — DATASET EXPLORATION ─────────────────────────────────────
+def make_nb02_02():
+    cells = [
+        md("""\
+# 📦 02 — Vehicle Dataset Exploration
+## SmartMine Vision AI · Module 2: Vehicle Detection
+
+---
+
+### Objectives
+1. Count **images and annotations** per source and split.
+2. Analyse **class names and distribution** across all four sources.
+3. Visualise **bounding box geometry** (size, aspect ratio, position).
+4. Identify **overlapping class semantics** across sources (prep for merging).
+
+---
+
+> **Prerequisite:** Run `01_dataset_download.ipynb` first to ensure all four
+> datasets are present under `datasets/raw/vehicles/`."""),
+
+        md("## 1. Setup"),
+        code(SETUP_CODE_02),
+        code("""\
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import yaml
+from collections import Counter
+
+""" + SOURCES_DICT + """
+
+sns.set_theme(style="whitegrid", palette="muted")
+plt.rcParams.update({"figure.dpi": 120, "font.size": 11})
+print("Imports OK.")"""),
+
+        md("## 2. Data Availability Guard"),
+        code("""\
+def images_in(path: Path) -> int:
+    return sum(1 for _ in path.rglob("*.jpg")) + sum(1 for _ in path.rglob("*.png"))
+
+available = {
+    alias: images_in(VEHICLES_DIR / alias) > 0
+    for alias in SOURCES
+}
+
+DATA_AVAILABLE = all(available.values())
+
+print("Availability:")
+for alias, ok in available.items():
+    print(f"  {alias:<30} {'OK' if ok else 'MISSING'}")
+print()
+if not DATA_AVAILABLE:
+    missing = [a for a, ok in available.items() if not ok]
+    print(f"[INFO] Missing datasets: {missing}")
+    print("Run 01_dataset_download.ipynb to download them.")
+    print("Analysis cells below will be skipped.")"""),
+
+        md("## 3. Image and Annotation Counts per Source"),
+        code("""\
+if DATA_AVAILABLE:
+    rows = []
+    for alias in SOURCES:
+        src_dir = VEHICLES_DIR / alias
+
+        # Roboflow downloads use train/valid/test structure
+        for split in ("train", "valid", "test"):
+            img_dir = src_dir / split / "images"
+            lbl_dir = src_dir / split / "labels"
+            if not img_dir.exists():
+                # some exports use different paths; try direct
+                img_dir = src_dir / "images"
+                lbl_dir = src_dir / "labels"
+            if not img_dir.exists():
+                continue
+
+            imgs = list(img_dir.glob("*.jpg")) + list(img_dir.glob("*.png"))
+            anns = sum(
+                len([l for l in (lbl_dir / (p.stem + ".txt")).read_text().splitlines()
+                     if l.strip()])
+                for p in imgs
+                if (lbl_dir / (p.stem + ".txt")).exists()
+            )
+            rows.append({
+                "source": alias,
+                "split": split,
+                "images": len(imgs),
+                "annotations": anns,
+            })
+
+    count_df = pd.DataFrame(rows)
+
+    print("IMAGE & ANNOTATION COUNTS")
+    print("=" * 60)
+    print(count_df.to_string(index=False))
+    print()
+
+    totals = count_df.groupby("source")[["images", "annotations"]].sum()
+    print("TOTALS PER SOURCE")
+    print("-" * 40)
+    print(totals.to_string())
+    print(f"\\nGRAND TOTAL: {totals['images'].sum():,} images  {totals['annotations'].sum():,} annotations")
+else:
+    print("[SKIP] Data not available.")"""),
+
+        code("""\
+if DATA_AVAILABLE:
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+
+    pivot = count_df.pivot_table(index="source", columns="split",
+                                  values="images", fill_value=0)
+    pivot.plot(kind="bar", ax=axes[0], colormap="Set2", edgecolor="white")
+    axes[0].set_title("Images per Source & Split")
+    axes[0].set_xlabel("")
+    axes[0].tick_params(axis="x", rotation=30)
+
+    totals.reset_index().plot.bar(x="source", y="annotations", ax=axes[1],
+                                   color="#7b68ee", edgecolor="white")
+    axes[1].set_title("Total Annotations per Source")
+    axes[1].set_xlabel("")
+    axes[1].tick_params(axis="x", rotation=30)
+
+    plt.suptitle("Vehicle Dataset Overview", fontsize=13, fontweight="bold")
+    plt.tight_layout()
+    plt.show()"""),
+
+        md("## 4. Class Names per Source"),
+        code("""\
+if DATA_AVAILABLE:
+    source_classes = {}
+    for alias in SOURCES:
+        src_dir = VEHICLES_DIR / alias
+        yaml_files = list(src_dir.rglob("*.yaml"))
+        if not yaml_files:
+            print(f"  [WARN] No data.yaml found for {alias}")
+            continue
+        with open(yaml_files[0]) as f:
+            cfg = yaml.safe_load(f)
+        names = cfg.get("names", {})
+        if isinstance(names, dict):
+            names = list(names.values())
+        source_classes[alias] = names
+        print(f"  {alias} ({len(names)} classes): {names[:10]}{'...' if len(names)>10 else ''}")
+
+    print()
+
+    # Show classes that appear in multiple sources (potential merge candidates)
+    all_classes = Counter()
+    for names in source_classes.values():
+        all_classes.update(n.lower() for n in names)
+
+    shared = {cls: cnt for cls, cnt in all_classes.items() if cnt > 1}
+    print(f"Classes appearing in 2+ sources ({len(shared)}):")
+    for cls, cnt in sorted(shared.items(), key=lambda x: -x[1]):
+        print(f"  {cls:<35} in {cnt} sources")
+else:
+    print("[SKIP] Data not available.")"""),
+
+        md("## 5. Bounding Box Geometry Analysis"),
+        code("""\
+if DATA_AVAILABLE:
+    all_boxes = {alias: [] for alias in SOURCES}
+
+    for alias in SOURCES:
+        src_dir = VEHICLES_DIR / alias
+        label_files = list(src_dir.rglob("*.txt"))
+        for txt in label_files[:300]:  # sample first 300 per source
+            for line in txt.read_text().splitlines():
+                parts = line.strip().split()
+                if len(parts) == 5:
+                    try:
+                        all_boxes[alias].append([float(p) for p in parts[1:]])
+                    except ValueError:
+                        pass
+
+    fig, axes = plt.subplots(len(SOURCES), 3, figsize=(15, 4 * len(SOURCES)))
+    if len(SOURCES) == 1:
+        axes = [axes]
+
+    for row_idx, alias in enumerate(SOURCES):
+        boxes = np.array(all_boxes[alias]) if all_boxes[alias] else np.empty((0, 4))
+        if len(boxes) == 0:
+            for ax in axes[row_idx]:
+                ax.text(0.5, 0.5, "no data", ha="center", va="center")
+                ax.set_title(alias)
+            continue
+
+        cx, cy, w, h = boxes[:, 0], boxes[:, 1], boxes[:, 2], boxes[:, 3]
+
+        axes[row_idx][0].hist(w, bins=40, alpha=0.7, color="#4CAF50", label="width")
+        axes[row_idx][0].hist(h, bins=40, alpha=0.7, color="#2196F3", label="height")
+        axes[row_idx][0].set_title(f"{alias} — BBox size")
+        axes[row_idx][0].legend(fontsize=8)
+
+        axes[row_idx][1].hist2d(cx, cy, bins=30, cmap="YlOrRd")
+        axes[row_idx][1].set_title(f"{alias} — Position heatmap")
+        axes[row_idx][1].invert_yaxis()
+
+        ar = w / np.maximum(h, 1e-6)
+        axes[row_idx][2].hist(ar, bins=40, alpha=0.8, color="#FF9800")
+        axes[row_idx][2].axvline(1.0, color="red", ls="--", alpha=0.6)
+        axes[row_idx][2].set_title(f"{alias} — Aspect ratio")
+
+    plt.suptitle("BBox Geometry per Source", fontsize=13, fontweight="bold")
+    plt.tight_layout()
+    plt.show()
+else:
+    print("[SKIP] Data not available.")"""),
+
+        md("""\
+## 6. Class Overlap Assessment
+
+Before merging these sources with `scripts/merge_datasets.py`, the class maps
+need to be harmonised. The table below captures the key vehicle classes found
+and their semantic equivalents across sources:
+
+| Canonical class | construction_vehicles | mining_area_detection | riskalert | riskalertai |
+|---|---|---|---|---|
+| `camion` / truck | ✓ | ✓ | ✓ | ✓ |
+| `excavadora` | — | ✓ | ✓ | ✓ |
+| `volquete` | — | ✓ | ✓ | ✓ |
+| `cargador_frontal` | — | — | ✓ | ✓ |
+| `motoniveladora` | — | — | ✓ | ✓ |
+| `cisterna_agua` | — | — | ✓ | ✓ |
+| `car` / `auto` | ✓ | ✓ | — | — |
+
+> This table is populated by running this notebook; update it after the
+> sources download. It feeds the class map in `scripts/merge_datasets.py`.
+
+## 7. Next Steps
+
+1. Review class overlap table above and update `scripts/merge_datasets.py`
+   class map to include the two new sources (`construction_vehicles`,
+   `mining_area_detection`, `riskalertai`).
+2. Run `python scripts/merge_datasets.py` to rebuild `datasets/merged/smartmine_v1/`.
+3. Proceed to `notebooks/01_ppe_detection/03_training_yolo.ipynb` with the
+   updated corpus."""),
+    ]
+    save("02_dataset_exploration.ipynb", nb(cells), NB_DIR_02)
+
+
 # ── MAIN ──────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     print("Generating Stage 1 notebooks...")
@@ -1628,3 +2054,9 @@ if __name__ == "__main__":
     make_nb05()
     make_nb06()
     print("\nDone. All 6 notebooks written to notebooks/01_ppe_detection/")
+
+    print("\nGenerating Module 2 notebooks...")
+    NB_DIR_02.mkdir(parents=True, exist_ok=True)
+    make_nb02_01()
+    make_nb02_02()
+    print("\nDone. All 2 notebooks written to notebooks/02_vehicle_detection/")

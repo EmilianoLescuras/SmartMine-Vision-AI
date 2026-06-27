@@ -44,5 +44,8 @@ python-dotenv>=1.0.1
 tqdm>=4.66.0
 loguru>=0.7.2
 
+# ── Dataset tooling ───────────────────────────────────────────────────────────
+roboflow>=1.1.0             # Roboflow Universe dataset downloads
+
 # ── Dev / Notebook Tooling ────────────────────────────────────────────────────
 nbstripout>=0.7.0           # git filter: strips outputs from .ipynb before commit

@@ -15,8 +15,11 @@ datasets/
 │   │   └── css-data/                   # Construction Site Safety (Roboflow / Kaggle)
 │   └── vehicles/
 │       ├── riskalert/                  # Roboflow Universe — personal-q02wc/riskalert-mining
+│       ├── riskalertai/                # Roboflow Universe — personal-q02wc/riskalertai-mining
 │       ├── deteccion_escenarios/       # Roboflow Universe — mining scene detection
-│       └── mining_area/                # Roboflow Universe — mining-area vehicle entry
+│       ├── mining_area/                # Roboflow Universe — mining-area vehicle entry
+│       ├── construction_vehicles/      # Roboflow Universe — 0925/construction-vehicle-inspection
+│       └── mining_area_detection/      # Roboflow Universe — septiana-s-workspace/mining-area-vehicle-detection
 ├── processed/        ← (reserved) intermediate single-source preprocessing
 └── merged/
     └── smartmine_v1/                   # Unified 32-class corpus used for training
@@ -24,6 +27,13 @@ datasets/
         ├── valid/{images,labels}
         ├── test/{images,labels}
         └── data.yaml                   # copy of configs/yaml/smartmine_unified.yaml
+```
+
+To download all vehicle datasets:
+
+```bash
+cp .env.example .env   # fill in ROBOFLOW_API_KEY
+python scripts/download_datasets.py
 ```
 
 ---
@@ -83,6 +93,26 @@ so you can see exactly which source labels are being dropped.
 - **Contribution:** heavy vehicle entering a mining zone. Only the
   generic vehicle classes are kept; the area-polygon class is dropped.
 
+### `raw/vehicles/construction_vehicles` — Construction Vehicle Inspection
+- **Source:** [Roboflow Universe — 0925/construction-vehicle-inspection](https://universe.roboflow.com/0925/construction-vehicle-inspection)
+- **Contribution:** construction-site vehicle classes (`car`, `truck`, `bus`,
+  machinery types) relevant to the vehicle detection module. Broadens
+  coverage beyond mining-specific platforms.
+- **Download:** `python scripts/download_datasets.py` (requires `ROBOFLOW_API_KEY`)
+
+### `raw/vehicles/mining_area_detection` — Mining-Area Vehicle Detection
+- **Source:** [Roboflow Universe — septiana-s-workspace/mining-area-vehicle-detection](https://universe.roboflow.com/septiana-s-workspace/mining-area-vehicle-detection)
+- **Contribution:** vehicle detection focused on mining-area entry/exit scenes;
+  complements `mining_area` with different viewpoints and lighting conditions.
+- **Download:** `python scripts/download_datasets.py` (requires `ROBOFLOW_API_KEY`)
+
+### `raw/vehicles/riskalertai` — RiskAlertAI Mining
+- **Source:** [Roboflow Universe — personal-q02wc/riskalertai-mining](https://universe.roboflow.com/personal-q02wc/riskalertai-mining)
+- **Contribution:** extended version of the `riskalert` dataset with additional
+  annotations and augmented variants, covering the same heavy-machinery and
+  PPE compliance classes.
+- **Download:** `python scripts/download_datasets.py` (requires `ROBOFLOW_API_KEY`)
+
 ---
 
 ## Known Gaps
@@ -102,3 +132,4 @@ so you can see exactly which source labels are being dropped.
 - `pyyaml` — read / write merged `data.yaml`.
 - `Pillow`, `opencv-python` — image inspection.
 - `pandas` — statistics dataframes.
+- `roboflow` — programmatic download from Roboflow Universe (`pip install roboflow`).
