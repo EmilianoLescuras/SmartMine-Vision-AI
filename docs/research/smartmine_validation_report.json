@@ -1,35 +1,30 @@
 {
-  "generated_at": "2026-06-21T00:44:45.090527",
+  "generated_at": "2026-06-30T09:26:47.509342",
   "dataset": "SmartMine Unified Dataset",
-  "total_files": 5785,
+  "total_files": 6156,
   "splits": {
     "test": {
-      "images": 225,
-      "with_label": 210,
+      "images": 261,
+      "with_label": 220,
       "background": 0,
-      "with_issues": 19
+      "with_issues": 41
     },
     "train": {
-      "images": 5193,
-      "with_label": 4966,
+      "images": 5481,
+      "with_label": 4939,
       "background": 0,
-      "with_issues": 323
+      "with_issues": 543
     },
     "valid": {
-      "images": 367,
-      "with_label": 338,
+      "images": 414,
+      "with_label": 354,
       "background": 0,
-      "with_issues": 30
+      "with_issues": 60
     }
   },
   "real_issue_counts": {
-    "missing_label": 271,
-    "line_0:bad_format": 98,
-    "line_1:bad_format": 53,
-    "line_2:bad_format": 22,
-    "line_3:bad_format": 6,
-    "line_4:bad_format": 3,
-    "line_5:bad_format": 3
+    "missing_label": 643,
+    "duplicate_of:riskalert_Captura-de-pantalla-2026-06-19-194128_png.rf.158e6002b38270396729574ad945e5ff.jpg": 1
   },
   "verdict": "ISSUES FOUND"
 }
