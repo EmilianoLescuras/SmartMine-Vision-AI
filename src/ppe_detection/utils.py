@@ -21,6 +21,10 @@ CONFIGS_DIR     = PROJECT_ROOT / "configs" / "yaml"
 DOCS_DIR        = PROJECT_ROOT / "docs" / "research"
 EXPERIMENTS_DIR = PROJECT_ROOT / "experiments"
 
+# Runtime dataset config consumed by Ultralytics. It lives inside the (gitignored)
+# merged dataset dir so it is never committed — see write_dataset_yaml() below.
+DATASET_YAML    = DATASET_ROOT / "smartmine_unified.autogen.yaml"
+
 # ── Unified class registry (32 classes) ──────────────────────────────────────
 CLASS_NAMES: dict[int, str] = {
     # People — compliance embedded in class
@@ -132,3 +136,35 @@ def ensure_dirs() -> None:
     for d in [OUTPUTS_DIR / "images", OUTPUTS_DIR / "videos",
               OUTPUTS_DIR / "logs", MODELS_DIR, DOCS_DIR, EXPERIMENTS_DIR]:
         d.mkdir(parents=True, exist_ok=True)
+
+
+def write_dataset_yaml(dest: Path = DATASET_YAML) -> Path:
+    """Write the unified dataset config with an ABSOLUTE ``path`` and return it.
+
+    Why this exists: Ultralytics resolves a *relative* ``path:`` in a dataset
+    YAML against its global ``datasets_dir`` setting — NOT against the YAML's own
+    location. A committed relative path (e.g. ``../../datasets/...``) therefore
+    resolves to the wrong place on most machines and training fails with
+    "images not found". We instead regenerate the YAML at runtime from
+    ``DATASET_ROOT`` (always correct, derived from this file's location) and
+    point training/eval at it. The file is written inside the gitignored merged
+    dataset dir, so the absolute path never gets committed (constitution: no
+    hardcoded absolute paths in tracked configs).
+
+    ``nc``/``names`` are emitted from CLASS_NAMES so the class registry has a
+    single source of truth.
+    """
+    import yaml
+
+    names = [CLASS_NAMES[i] for i in range(len(CLASS_NAMES))]
+    cfg = {
+        "path":  str(DATASET_ROOT),
+        "train": "train/images",
+        "val":   "valid/images",
+        "test":  "test/images",
+        "nc":    len(names),
+        "names": names,
+    }
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_text(yaml.safe_dump(cfg, sort_keys=False, allow_unicode=True))
+    return dest

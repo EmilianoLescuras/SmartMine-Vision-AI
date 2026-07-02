@@ -685,13 +685,25 @@ import yaml
 from ultralytics import YOLO
 
 from src.ppe_detection.utils import (
-    CONFIGS_DIR, MODELS_DIR, EXPERIMENTS_DIR, ensure_dirs
+    MODELS_DIR, EXPERIMENTS_DIR, ensure_dirs, write_dataset_yaml
 )
-from src.ppe_detection.trainer import train_ppe_model
+from src.ppe_detection.trainer import (
+    train_ppe_model, detect_train_device, recommended_train_config
+)
 ensure_dirs()"""),
 
-        md("## 2. Environment Check"),
+        md("""\
+## 2. Environment Check
+
+> **Apple Silicon note:** training runs on **CPU**, not MPS. YOLOv8's backward
+> pass crashes on the MPS backend with torch ≤ 2.5
+> (`view size is not compatible with input tensor's size and stride`), a known
+> PyTorch regression. `detect_train_device()` skips MPS for training; inference
+> (notebooks 05/06) still uses MPS via `detect_device()`. On a CUDA machine the
+> GPU is used automatically."""),
         code("""\
+import platform
+
 print("=" * 50)
 print("  TRAINING ENVIRONMENT")
 print("=" * 50)
@@ -703,23 +715,23 @@ if cuda_ok:
     print(f"  GPU          : {torch.cuda.get_device_name(0)}")
     vram = torch.cuda.get_device_properties(0).total_memory / 1e9
     print(f"  VRAM         : {vram:.1f} GB")
-    DEVICE = "0"
-else:
-    import platform
-    if platform.system() == "Darwin":
-        mps_ok = torch.backends.mps.is_available()
-        print(f"  MPS (Apple)  : {mps_ok}")
-        DEVICE = "mps" if mps_ok else "cpu"
-    else:
-        print("  Device       : CPU only")
-        DEVICE = "cpu"
+elif platform.system() == "Darwin":
+    print(f"  MPS (Apple)  : {torch.backends.mps.is_available()}  (skipped for training)")
 
-print(f"  Selected     : {DEVICE}")
+# detect_train_device() returns CUDA when present, else CPU (never MPS) — see note above.
+DEVICE = detect_train_device()
+print(f"  Train device : {DEVICE}")
 print("=" * 50)"""),
 
-        md("## 3. Dataset Configuration"),
+        md("""\
+## 3. Dataset Configuration
+
+`write_dataset_yaml()` regenerates the dataset config with an **absolute** `path`
+resolved from `src/ppe_detection/utils.py`. This avoids Ultralytics' relative-path
+trap (it resolves `path:` against its global `datasets_dir`, not the YAML location),
+which otherwise makes training fail with *"images not found"*."""),
         code("""\
-DATA_YAML = CONFIGS_DIR / "smartmine_unified.yaml"
+DATA_YAML = write_dataset_yaml()   # absolute-path config, resolved from utils
 print(f"Config: {DATA_YAML}")
 print(f"Exists: {DATA_YAML.exists()}")
 print()
@@ -747,28 +759,44 @@ for k, v in _items:
 | Parameter | Value | Rationale |
 |-----------|-------|-----------|
 | Base model | `yolov8n.pt` | COCO pre-trained, fastest iteration |
-| Epochs | 100 | Sufficient for fine-tuning a pre-trained model |
-| Image size | 640 | Matches dataset pre-processing |
-| Batch | -1 (auto) | YOLOv8 auto-selects optimal batch for available VRAM |
+| Epochs | 10 (CPU) / 100 (GPU) | CPU bounded; GPU aims for mAP>0.70 (early stop via patience) |
+| Image size | 416 (CPU) / 640 (GPU) | Lower res keeps CPU epochs to minutes |
+| Data fraction | 0.20 (CPU) / 1.0 (GPU) | Subset keeps CPU training time bounded |
+| Batch | 16 (CPU) / −1 AutoBatch (GPU) | AutoBatch is CUDA-only; picks the largest batch for VRAM |
 | Optimizer | AdamW | Ultralytics default — best convergence on small datasets |
 | Augmentation | Built-in | Mosaic, mixup, copy-paste, flips, HSV jitter |
 | Patience | 50 | Early stopping if no improvement for 50 epochs |
+
+These values come from `recommended_train_config(DEVICE)` (in
+`src/ppe_detection/trainer.py`) — **the notebook auto-selects the CPU or CUDA
+profile**, so a collaborator on a GPU desktop and one on a CPU laptop both run
+this unchanged. Override `cfg` in the next cell to customise.
+
+> **GPU setup:** install a CUDA-enabled PyTorch (e.g. `conda env create -f
+> environment.yml` on a CUDA box, or follow pytorch.org for the right CUDA
+> build). When `torch.cuda.is_available()` is `True`, training uses the GPU
+> automatically — no notebook edits needed.
 
 > **Reproducibility:** All training args are saved automatically to
 > `experiments/smartmine_v1/baseline/args.yaml` by Ultralytics."""),
 
         md("## 5. Launch Training"),
         code("""\
-# ⏱  GPU (RTX 3060+): ~20-40 min  |  CPU: several hours
-# Reduce epochs to 10 for a quick smoke-test on CPU.
+# Device-aware config so the same notebook runs on CPU and GPU without edits:
+#   • CUDA  → full dataset @640, AutoBatch (-1), 100 epochs (aims for mAP>0.70)
+#   • CPU/MPS → 20% subset @416, batch 16, 10 epochs (~30 min, not hours)
+# Override any field before training, e.g.:
+#   cfg.update(fraction=1.0, imgsz=640, epochs=50)   # CPU user wanting full run
+#   cfg.update(epochs=50)                            # GPU user in a hurry
+cfg = recommended_train_config(DEVICE)
+print(f"Device: {DEVICE}   training config: {cfg}")
 
 best_weights = train_ppe_model(
     data_yaml  = DATA_YAML,
     base_model = "yolov8n.pt",
-    epochs     = 100,
-    imgsz      = 640,
     name       = "baseline",
     device     = DEVICE,
+    **cfg,
 )
 print(f"\\n✅ Training complete.")
 print(f"   Best weights → {best_weights}")"""),
@@ -895,7 +923,7 @@ import cv2, random
 from ultralytics import YOLO
 
 from src.ppe_detection.utils import (
-    MODELS_DIR, CONFIGS_DIR, OUTPUTS_DIR, CLASS_NAMES, PERSON_CLASS_IDS, ensure_dirs
+    MODELS_DIR, OUTPUTS_DIR, CLASS_NAMES, PERSON_CLASS_IDS, ensure_dirs, write_dataset_yaml
 )
 from src.ppe_detection.inference import load_model, predict_image, draw_detections
 
@@ -903,7 +931,7 @@ ensure_dirs()
 sns.set_theme(style="whitegrid")
 
 WEIGHTS   = MODELS_DIR / "yolov8n_smartmine_baseline.pt"
-DATA_YAML = CONFIGS_DIR / "smartmine_unified.yaml"
+DATA_YAML = write_dataset_yaml()   # absolute-path config, resolved from utils
 
 print(f"Weights : {WEIGHTS}")
 print(f"Exists  : {WEIGHTS.exists()}")"""),
@@ -1410,9 +1438,9 @@ read frame
     → write to output video
 ```
 
-> **How to get a test video:**
-> Place any `.mp4` / `.avi` construction or mining site video in the project
-> folder and update `VIDEO_PATH` in the Setup cell below."""),
+> **Test video:** if you don't set `VIDEO_PATH` to a real clip, the next section
+> auto-generates a short demo video from the test images so the pipeline still
+> runs end-to-end."""),
 
         md("## 1. Setup"),
         code(SETUP_CODE),
@@ -1422,7 +1450,7 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
-from src.ppe_detection.utils import MODELS_DIR, OUTPUTS_DIR, ensure_dirs
+from src.ppe_detection.utils import MODELS_DIR, OUTPUTS_DIR, TEST_IMAGES, ensure_dirs
 from src.ppe_detection.inference import load_model, predict_image, draw_detections
 from src.ppe_detection.ppe_classifier import classify_workers, compliance_color, ComplianceStatus
 
@@ -1430,7 +1458,7 @@ ensure_dirs()
 
 WEIGHTS = MODELS_DIR / "yolov8n_smartmine_baseline.pt"
 
-# ── UPDATE THIS PATH ──────────────────────────────────────────────────────────
+# ── Optional: point this at a real construction/mining clip ───────────────────
 VIDEO_PATH = Path("/path/to/your/construction_video.mp4")
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -1438,7 +1466,40 @@ if not WEIGHTS.exists():
     print("⚠  Model not found — run notebook 03 first.")
 else:
     model = load_model(WEIGHTS)
-    print(f"Model loaded : {WEIGHTS.name}")
+    print(f"Model loaded : {WEIGHTS.name}")"""),
+
+        md("""\
+### 1b. Demo clip (auto-generated)
+
+No external video? We stitch a handful of **test images** into a short clip so the
+full video pipeline runs end-to-end. Replace `VIDEO_PATH` above with a real site
+video for a realistic benchmark."""),
+        code("""\
+def make_demo_video(dest: Path, hold: int = 4, loops: int = 2,
+                    size=(960, 540), fps: int = 12, n_imgs: int = 15) -> Path:
+    \"\"\"Stitch the first n_imgs test images into a letterboxed demo clip.\"\"\"
+    imgs = sorted(TEST_IMAGES.glob("*.jpg"))[:n_imgs]
+    w_t, h_t = size
+    writer = cv2.VideoWriter(str(dest), cv2.VideoWriter_fourcc(*"mp4v"), fps, size)
+    for _ in range(loops):
+        for p in imgs:
+            img = cv2.imread(str(p))
+            if img is None:
+                continue
+            h, w = img.shape[:2]
+            scale = min(w_t / w, h_t / h)
+            nw, nh = int(w * scale), int(h * scale)
+            canvas = np.zeros((h_t, w_t, 3), dtype=np.uint8)
+            canvas[(h_t - nh) // 2:(h_t - nh) // 2 + nh,
+                   (w_t - nw) // 2:(w_t - nw) // 2 + nw] = cv2.resize(img, (nw, nh))
+            for _ in range(hold):
+                writer.write(canvas)
+    writer.release()
+    return dest
+
+if not VIDEO_PATH.exists():
+    print("No external video set — generating a demo clip from test images…")
+    VIDEO_PATH = make_demo_video(OUTPUTS_DIR / "videos" / "demo_source.mp4")
 
 print(f"Video path   : {VIDEO_PATH}")
 print(f"Video exists : {VIDEO_PATH.exists()}")"""),
@@ -1603,8 +1664,8 @@ if VIDEO_PATH.exists() and WEIGHTS.exists():
 | Component | Status |
 |---|---|
 | Dataset explored & validated | ✅ pipeline implemented |
-| YOLOv8n fine-tuned (100 epochs) | ⏳ pending — SPEC-003 |
-| Quantitative evaluation (mAP50, PR, CM) | ⏳ pending — SPEC-003 |
+| YOLOv8n fine-tuned (baseline) | ✅ pipeline implemented (run nb03) |
+| Quantitative evaluation (mAP50, PR, CM) | ✅ pipeline implemented (run nb04) |
 | Image inference + compliance overlay | ✅ pipeline implemented |
 | Video inference + real-time FPS | ✅ pipeline implemented |
 | SAFE/UNSAFE worker classification | ✅ pipeline implemented |
