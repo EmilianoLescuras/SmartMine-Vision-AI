@@ -7,10 +7,21 @@ Usage:
 Add new datasets to SOURCES list before running.
 Each source needs: path, split dirs, and a class_map that remaps
 original class IDs to the unified schema IDs defined in UNIFIED_CLASSES.
+
+SPEC-007 additions:
+  - Every label line is validated (5 fields, int class id, 4 floats in [0,1]).
+    Invalid lines never enter the corpus; they are recorded in
+    `_quarantine/manifest.json` with file, line number, content and reason.
+  - Images whose annotations are 100% skipped get an explicit EMPTY label
+    file (intentional background) instead of silently missing one.
+  - A single pass produces two corpora:
+      * smartmine_v1   — full archive schema (33 classes)
+      * smartmine_core — training schema (18 classes, all >=100 instances)
+  - Everything dropped/remapped is accounted for in `merge_manifest.json`.
 """
 from __future__ import annotations
 
-import os
+import json
 import shutil
 import yaml
 from pathlib import Path
@@ -36,7 +47,7 @@ UNIFIED_CLASSES = [
     "camioneta",                     # 14
     "minibus",                       # 15
     "volquete",                      # 16
-    "camion",                        # 17  (generic truck from other datasets)
+    "camion",                        # 17  (reserved: real trucks only — see SPEC-007 AC-4)
     "excavadora",                    # 18
     "retro_excavadora",              # 19
     "cargador_frontal",              # 20
@@ -52,10 +63,47 @@ UNIFIED_CLASSES = [
     "animal",                        # 29
     "polvo",                         # 30
     "machinery",                     # 31  (generic, from CSS dataset)
+    "vehiculo_generico",             # 32  (generic vehicle from CSS — kept apart
+                                     #      so `camion` stays semantically honest)
 ]
+
+# ── Core training schema (SPEC-007 AC-5) ─────────────────────────────────────
+# Only classes with >=100 measured instances and clean object semantics.
+# Excluded pairs (guantes/lentes/respirador) have a violation side <100 inst.,
+# which makes the compliance pair undetectable; ambient classes (animal/polvo)
+# and generic vehicle classes are excluded from training on purpose.
+CORE_CLASSES = [
+    "person",                        # 0
+    "person_con_casco",              # 1
+    "person_sin_casco",              # 2
+    "person_sin_chaleco",            # 3
+    "person_ropa_reflectiva",        # 4
+    "person_sin_ropa_reflectiva",    # 5
+    "mask",                          # 6
+    "hardhat",                       # 7
+    "safety_vest",                   # 8
+    "safety_cone",                   # 9
+    "camioneta",                     # 10
+    "volquete",                      # 11
+    "excavadora",                    # 12
+    "retro_excavadora",              # 13
+    "motoniveladora",                # 14
+    "rodillo",                       # 15
+    "cisterna_agua",                 # 16
+    "machinery",                     # 17
+]
+
+# unified id → core id (everything else is dropped from core, with accounting)
+UNIFIED_TO_CORE: dict[int, int] = {
+    0: 0, 1: 1, 2: 2, 4: 3, 11: 4, 12: 5, 13: 6,
+    27: 7, 28: 8, 25: 9,
+    14: 10, 16: 11, 18: 12, 19: 13, 21: 14, 23: 15, 24: 16,
+    31: 17,
+}
 
 PROJECT_ROOT = Path(__file__).parent.parent
 MERGED_DIR   = PROJECT_ROOT / "datasets" / "merged" / "smartmine_v1"
+CORE_DIR     = PROJECT_ROOT / "datasets" / "merged" / "smartmine_core"
 
 # ── Dataset sources ───────────────────────────────────────────────────────────
 # class_map: {original_class_id: unified_class_id}
@@ -75,7 +123,9 @@ SOURCES = [
             6: 25,   # Safety Cone   → safety_cone
             7: 28,   # Safety Vest   → safety_vest
             8: 31,   # machinery     → machinery
-            9: 17,   # vehicle       → camion (generic)
+            9: 32,   # vehicle       → vehiculo_generico (SPEC-007 AC-4:
+                     #                 was polluting `camion` with 1,628 generic
+                     #                 construction vehicles)
         },
     },
     {
@@ -193,68 +243,125 @@ SOURCES = [
             66: 16,   # VOLQUETE_DESCARGA              → volquete
         },
     },
-    {
-        "name": "mining_area",
-        "path": PROJECT_ROOT / "datasets/raw/vehicles/mining_area",
-        "splits": ["train", "valid", "test"],
-        "class_map": {
-            0: None, # Area Tambang (zona minera)              → skip (zona, no objeto)
-            1: 17,   # Kendaraan asing masuk area tambang      → camion (vehículo genérico)
-            2: 17,   # Kendaraan masuk tambang                 → camion (vehículo genérico)
-        },
-    },
-    # ── Add new datasets here when available ──────────────────────────────────
+    # ── mining_area: EXCLUIDO del merge de detección (SPEC-007 AC-3) ──────────
+    # Sus 3 clases son eventos de zona ("Kendaraan masuk tambang" = vehículo
+    # entra al área), no tipos de objeto: mapearlas a `camion` inyectaba 2.551
+    # falsas instancias (61% de la clase). Además es la única fuente con labels
+    # corruptos (185 líneas malformadas). Los datos quedan en raw/ para la
+    # futura capa de eventos/geofencing.
     # {
-    #     "name": "nuevo_dataset",
-    #     "path": PROJECT_ROOT / "datasets/raw/vehicles/nuevo",
+    #     "name": "mining_area",
+    #     "path": PROJECT_ROOT / "datasets/raw/vehicles/mining_area",
     #     "splits": ["train", "valid", "test"],
-    #     "class_map": { 0: X, 1: Y, ... },
+    #     "class_map": {0: None, 1: None, 2: None},
     # },
+    # ── Add new datasets here when available ──────────────────────────────────
 ]
 
 
-def remap_label_file(
-    src_path: Path,
-    dst_path: Path,
-    class_map: dict,
-    skip_counter: dict[int, int] | None = None,
-    kept_counter: dict[int, int] | None = None,
-) -> int:
-    """Rewrite a YOLO label file with remapped class IDs. Returns lines written.
+def validate_line(parts: list[str]) -> str | None:
+    """Return a reason string if a YOLO label line is invalid, else None."""
+    if len(parts) != 5:
+        return f"expected 5 fields, got {len(parts)}"
+    try:
+        int(parts[0])
+    except ValueError:
+        return f"class id not an int: {parts[0]!r}"
+    try:
+        coords = [float(x) for x in parts[1:]]
+    except ValueError:
+        return "non-numeric coordinate"
+    if any(c < 0.0 or c > 1.0 for c in coords):
+        return f"coordinate out of [0,1]: {coords}"
+    return None
 
-    Updates the optional counter dicts with per-original-class kept/skipped
-    annotation totals so callers can audit coverage of the source schema.
+
+def process_label_file(
+    src_path: Path,
+    class_map: dict,
+    skip_counter: dict[int, int],
+    kept_counter: dict[int, int],
+    quarantine: list[dict],
+    source_name: str,
+    split: str,
+) -> tuple[list[str], list[str]]:
+    """Validate + remap one label file.
+
+    Returns (v1_lines, core_lines). Invalid lines go to `quarantine` and are
+    never written; skipped classes update `skip_counter`.
     """
-    lines_written = 0
+    v1_lines: list[str] = []
+    core_lines: list[str] = []
     with open(src_path) as f:
-        lines = f.readlines()
-    out = []
-    for line in lines:
+        raw_lines = f.readlines()
+    for lineno, line in enumerate(raw_lines, start=1):
         parts = line.strip().split()
         if not parts:
+            continue
+        reason = validate_line(parts)
+        if reason is not None:
+            quarantine.append({
+                "source": source_name,
+                "split": split,
+                "file": src_path.name,
+                "line": lineno,
+                "content": line.strip()[:120],
+                "reason": reason,
+            })
             continue
         orig_id = int(parts[0])
         new_id = class_map.get(orig_id)
         if new_id is None:
-            if skip_counter is not None:
-                skip_counter[orig_id] = skip_counter.get(orig_id, 0) + 1
+            skip_counter[orig_id] = skip_counter.get(orig_id, 0) + 1
             continue
-        if kept_counter is not None:
-            kept_counter[orig_id] = kept_counter.get(orig_id, 0) + 1
-        out.append(f"{new_id} {' '.join(parts[1:])}\n")
-        lines_written += 1
-    if out:
-        dst_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(dst_path, "w") as f:
-            f.writelines(out)
-    return lines_written
+        kept_counter[orig_id] = kept_counter.get(orig_id, 0) + 1
+        coords = " ".join(parts[1:])
+        v1_lines.append(f"{new_id} {coords}\n")
+        core_id = UNIFIED_TO_CORE.get(new_id)
+        if core_id is not None:
+            core_lines.append(f"{core_id} {coords}\n")
+    return v1_lines, core_lines
+
+
+def _reset_output_dirs() -> None:
+    """Remove previously generated corpora so stale files never survive."""
+    for d in (MERGED_DIR, CORE_DIR):
+        if d.exists():
+            shutil.rmtree(d)
+        d.mkdir(parents=True)
+
+
+def _write_yamls() -> Path:
+    for base, classes, cfg_name in (
+        (MERGED_DIR, UNIFIED_CLASSES, "smartmine_unified.yaml"),
+        (CORE_DIR,   CORE_CLASSES,    "smartmine_core.yaml"),
+    ):
+        block = {
+            "train": "train/images",
+            "val":   "valid/images",
+            "test":  "test/images",
+            "nc":    len(classes),
+            "names": classes,
+        }
+        with open(base / "data.yaml", "w") as f:
+            yaml.dump({"path": "."} | block, f, allow_unicode=True, sort_keys=False)
+        cfg_yaml = PROJECT_ROOT / "configs/yaml" / cfg_name
+        rel = f"../../datasets/merged/{base.name}"
+        with open(cfg_yaml, "w") as f:
+            yaml.dump({"path": rel} | block, f, allow_unicode=True, sort_keys=False)
+    return PROJECT_ROOT / "configs/yaml"
 
 
 def merge():
-    print(f"\nMerging {len(SOURCES)} datasets -> {MERGED_DIR}\n")
+    print(f"\nMerging {len(SOURCES)} datasets -> {MERGED_DIR} + {CORE_DIR}\n")
+    _reset_output_dirs()
 
-    counts: dict[str, dict[str, int]] = {s: {"images": 0, "labels": 0} for s in ["train", "valid", "test"]}
-    per_source_stats: dict[str, dict[str, dict[int, int]]] = {}
+    counts = {s: {"images": 0, "labels": 0, "backgrounds": 0}
+              for s in ["train", "valid", "test"]}
+    per_source_stats: dict[str, dict] = {}
+    quarantine: list[dict] = []
+    v1_class_totals: dict[int, int] = {}
+    core_class_totals: dict[int, int] = {}
 
     for source in SOURCES:
         name      = source["name"]
@@ -262,61 +369,107 @@ def merge():
         class_map = source["class_map"]
         skip_counter: dict[int, int] = {}
         kept_counter: dict[int, int] = {}
-        per_source_stats[name] = {"kept": kept_counter, "skipped": skip_counter}
+        backgrounds = 0
         print(f"  [{name}]  {src_root}")
 
         for split in source["splits"]:
             img_src = src_root / split / "images"
             lbl_src = src_root / split / "labels"
-            img_dst = MERGED_DIR / split / "images"
-            lbl_dst = MERGED_DIR / split / "labels"
-            img_dst.mkdir(parents=True, exist_ok=True)
-            lbl_dst.mkdir(parents=True, exist_ok=True)
-
             if not img_src.exists():
                 continue
+            for base in (MERGED_DIR, CORE_DIR):
+                (base / split / "images").mkdir(parents=True, exist_ok=True)
+                (base / split / "labels").mkdir(parents=True, exist_ok=True)
 
-            for img_file in img_src.iterdir():
+            for img_file in sorted(img_src.iterdir()):
                 if img_file.suffix.lower() not in {".jpg", ".jpeg", ".png"}:
                     continue
 
-                new_stem  = f"{name}_{img_file.stem}"
-                dst_img   = img_dst / (new_stem + img_file.suffix)
-                lbl_file  = lbl_src / (img_file.stem + ".txt")
-                dst_lbl   = lbl_dst / (new_stem + ".txt")
+                new_stem = f"{name}_{img_file.stem}"
+                lbl_file = lbl_src / (img_file.stem + ".txt")
 
-                shutil.copy2(img_file, dst_img)
-                counts[split]["images"] += 1
-
+                v1_lines: list[str] = []
+                core_lines: list[str] = []
                 if lbl_file.exists():
-                    written = remap_label_file(
-                        lbl_file, dst_lbl, class_map,
-                        skip_counter=skip_counter, kept_counter=kept_counter,
+                    v1_lines, core_lines = process_label_file(
+                        lbl_file, class_map, skip_counter, kept_counter,
+                        quarantine, name, split,
                     )
-                    if written:
-                        counts[split]["labels"] += 1
 
-    _class_block = {
-        "train": "train/images",
-        "val":   "valid/images",
-        "test":  "test/images",
-        "nc":    len(UNIFIED_CLASSES),
-        "names": UNIFIED_CLASSES,
+                for base, lines, totals in (
+                    (MERGED_DIR, v1_lines, v1_class_totals),
+                    (CORE_DIR, core_lines, core_class_totals),
+                ):
+                    shutil.copy2(img_file, base / split / "images" / (new_stem + img_file.suffix))
+                    # Empty file = explicit intentional background (SPEC-007
+                    # AC-2): the validator must never see a missing label.
+                    with open(base / split / "labels" / (new_stem + ".txt"), "w") as f:
+                        f.writelines(lines)
+                    for ln in lines:
+                        cid = int(ln.split()[0])
+                        totals[cid] = totals.get(cid, 0) + 1
+
+                counts[split]["images"] += 1
+                if v1_lines:
+                    counts[split]["labels"] += 1
+                else:
+                    counts[split]["backgrounds"] += 1
+                    backgrounds += 1
+
+        per_source_stats[name] = {
+            "kept": kept_counter, "skipped": skip_counter,
+            "backgrounds": backgrounds,
+        }
+
+    cfg_dir = _write_yamls()
+
+    # ── Manifests (SPEC-007 AC-1/AC-2/AC-5) ──────────────────────────────────
+    quarantine_dir = MERGED_DIR / "_quarantine"
+    quarantine_dir.mkdir(exist_ok=True)
+    with open(quarantine_dir / "manifest.json", "w") as f:
+        json.dump({"invalid_lines": quarantine, "total": len(quarantine)},
+                  f, indent=1, ensure_ascii=False)
+
+    manifest = {
+        "generated_by": "scripts/merge_datasets.py (SPEC-007)",
+        "sources": {
+            name: {
+                "kept_annotations": sum(s["kept"].values()),
+                "skipped_annotations": sum(s["skipped"].values()),
+                "skipped_by_original_id": s["skipped"],
+                "background_images": s["backgrounds"],
+            }
+            for name, s in per_source_stats.items()
+        },
+        "quarantined_lines": len(quarantine),
+        "v1": {
+            "nc": len(UNIFIED_CLASSES),
+            "class_counts": {UNIFIED_CLASSES[i]: v1_class_totals.get(i, 0)
+                             for i in range(len(UNIFIED_CLASSES))},
+        },
+        "core": {
+            "nc": len(CORE_CLASSES),
+            "class_counts": {CORE_CLASSES[i]: core_class_totals.get(i, 0)
+                             for i in range(len(CORE_CLASSES))},
+            "dropped_from_core": [
+                UNIFIED_CLASSES[i] for i in range(len(UNIFIED_CLASSES))
+                if i not in UNIFIED_TO_CORE
+            ],
+        },
+        "excluded_sources": {
+            "mining_area": "clases de evento de zona, no objetos; 185 líneas "
+                           "corruptas; reservado para capa de eventos (AC-3)",
+        },
     }
+    with open(MERGED_DIR / "merge_manifest.json", "w") as f:
+        json.dump(manifest, f, indent=1, ensure_ascii=False)
 
-    yaml_path = MERGED_DIR / "data.yaml"
-    with open(yaml_path, "w") as f:
-        yaml.dump({"path": "."} | _class_block, f, allow_unicode=True, sort_keys=False)
-
-    cfg_yaml = PROJECT_ROOT / "configs/yaml/smartmine_unified.yaml"
-    with open(cfg_yaml, "w") as f:
-        yaml.dump({"path": "../../datasets/merged/smartmine_v1"} | _class_block,
-                  f, allow_unicode=True, sort_keys=False)
-
+    # ── Console summary ──────────────────────────────────────────────────────
     print("\n-- Split totals --")
     total_imgs = 0
     for split, c in counts.items():
-        print(f"  {split:6s}: {c['images']:4d} imgs  {c['labels']:4d} labels")
+        print(f"  {split:6s}: {c['images']:4d} imgs  {c['labels']:4d} labeled  "
+              f"{c['backgrounds']:3d} backgrounds")
         total_imgs += c["images"]
     print(f"  TOTAL : {total_imgs} images")
 
@@ -326,14 +479,18 @@ def merge():
         skipped = sum(stats["skipped"].values())
         total = kept + skipped
         pct = (100.0 * kept / total) if total else 0.0
-        print(f"  [{name}] kept {kept:5d} / {total:5d} annotations ({pct:.1f}%)")
+        print(f"  [{name}] kept {kept:5d} / {total:5d} annotations ({pct:.1f}%)  "
+              f"backgrounds: {stats['backgrounds']}")
         if stats["skipped"]:
             top = sorted(stats["skipped"].items(), key=lambda kv: -kv[1])[:5]
             preview = ", ".join(f"id{k}={v}" for k, v in top)
             print(f"           skipped breakdown (top 5 ids): {preview}")
 
-    print(f"\n  Unified YAML -> {cfg_yaml}")
-    print(f"  Merged data  -> {MERGED_DIR}")
+    print(f"\n  Quarantined lines : {len(quarantine)} -> {quarantine_dir / 'manifest.json'}")
+    print(f"  Merge manifest    -> {MERGED_DIR / 'merge_manifest.json'}")
+    print(f"  Configs           -> {cfg_dir}/smartmine_unified.yaml + smartmine_core.yaml")
+    print(f"  v1 data   ({len(UNIFIED_CLASSES)} cls) -> {MERGED_DIR}")
+    print(f"  core data ({len(CORE_CLASSES)} cls) -> {CORE_DIR}")
     print("\nDone.\n")
 
 

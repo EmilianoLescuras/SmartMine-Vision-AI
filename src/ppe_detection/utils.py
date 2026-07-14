@@ -25,7 +25,7 @@ EXPERIMENTS_DIR = PROJECT_ROOT / "experiments"
 # merged dataset dir so it is never committed — see write_dataset_yaml() below.
 DATASET_YAML    = DATASET_ROOT / "smartmine_unified.autogen.yaml"
 
-# ── Unified class registry (32 classes) ──────────────────────────────────────
+# ── Unified class registry (33 classes) ──────────────────────────────────────
 CLASS_NAMES: dict[int, str] = {
     # People — compliance embedded in class
     0:  "person",
@@ -62,6 +62,8 @@ CLASS_NAMES: dict[int, str] = {
     29: "animal",
     30: "polvo",
     31: "machinery",
+    32: "vehiculo_generico",   # SPEC-007: generic vehicle from CSS, kept apart
+                               # so `camion` (17) stays semantically honest
 }
 
 # ── Compliance groups ─────────────────────────────────────────────────────────
@@ -89,7 +91,7 @@ PPE_CLASSES = {
 # All class IDs that represent a person (used to find workers)
 PERSON_CLASS_IDS: set[int] = set(range(13))
 
-VEHICLE_CLASS_IDS: set[int] = {14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24}
+VEHICLE_CLASS_IDS: set[int] = {14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 32}
 
 # ── Colour palette (BGR for OpenCV) ──────────────────────────────────────────
 CLASS_COLORS: dict[int, tuple[int, int, int]] = {
@@ -128,6 +130,7 @@ CLASS_COLORS: dict[int, tuple[int, int, int]] = {
     29: (100, 80, 60),    # animal              — brown
     30: (150, 150, 180),  # polvo               — grey-blue
     31: (128, 0, 128),    # machinery           — purple
+    32: (100, 60, 0),     # vehiculo_generico   — muted blue
 }
 
 

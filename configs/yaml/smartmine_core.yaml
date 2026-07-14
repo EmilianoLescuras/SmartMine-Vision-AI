@@ -1,0 +1,24 @@
+path: ../../datasets/merged/smartmine_core
+train: train/images
+val: valid/images
+test: test/images
+nc: 18
+names:
+- person
+- person_con_casco
+- person_sin_casco
+- person_sin_chaleco
+- person_ropa_reflectiva
+- person_sin_ropa_reflectiva
+- mask
+- hardhat
+- safety_vest
+- safety_cone
+- camioneta
+- volquete
+- excavadora
+- retro_excavadora
+- motoniveladora
+- rodillo
+- cisterna_agua
+- machinery
