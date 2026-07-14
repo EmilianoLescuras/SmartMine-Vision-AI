@@ -64,21 +64,23 @@ SOURCES = {
         "url":       "https://universe.roboflow.com/personal-q02wc/riskalertai-mining",
         "dest":      "datasets/raw/vehicles/riskalertai",
     },
-    # ── Pending (workspace/project/version unknown — ask Emiliano) ───────────
-    # "deteccion_escenarios": {
-    #     "workspace": "???",
-    #     "project":   "???",
-    #     "version":   1,
-    #     "url":       "https://universe.roboflow.com/???",
-    #     "dest":      "datasets/raw/vehicles/deteccion_escenarios",
-    # },
-    # "mining_area": {
-    #     "workspace": "???",
-    #     "project":   "???",
-    #     "version":   1,
-    #     "url":       "https://universe.roboflow.com/???",
-    #     "dest":      "datasets/raw/vehicles/mining_area",
-    # },
+    "deteccion_escenarios": {
+        "workspace": "personal-q02wc",
+        "project":   "deteccion-de-escenarios-de-riesg-a8hb1",
+        "version":   8,
+        "url":       "https://universe.roboflow.com/personal-q02wc/deteccion-de-escenarios-de-riesg-a8hb1",
+        "dest":      "datasets/raw/vehicles/deteccion_escenarios",
+    },
+    # ── PPE — descarga directa (no Roboflow) ─────────────────────────────────
+    # SPEC-008: Construction-PPE de Ultralytics (AGPL-3.0, riesgo documentado
+    # en specs/008). Se baja como zip directo.
+    "construction_ppe": {
+        "type": "http_zip",
+        "url":  "https://github.com/ultralytics/assets/releases/download/v0.0.0/construction-ppe.zip",
+        "dest": "datasets/raw/ppe/construction_ppe",
+    },
+    # ── mining_area: NO descargar — excluido del merge por SPEC-007 AC-3 ─────
+    # (clases de evento de zona + 185 labels corruptos; ver docs/research/)
 }
 
 DOWNLOAD_FORMAT = "yolov8"
@@ -102,6 +104,43 @@ def _check_api_key() -> str:
 def _is_downloaded(dest: Path) -> bool:
     """Return True if the destination has at least one image file."""
     return any(dest.rglob("*.jpg")) or any(dest.rglob("*.png"))
+
+
+def download_http_zip(alias: str, meta: dict) -> bool:
+    """Download and extract a plain zip dataset (non-Roboflow sources)."""
+    import io
+    import zipfile
+    from urllib.request import urlopen
+
+    dest = PROJECT_ROOT / meta["dest"]
+    if _is_downloaded(dest):
+        print(f"  [SKIP] {alias} — already present at {dest}")
+        return True
+
+    dest.mkdir(parents=True, exist_ok=True)
+    print(f"  [DOWNLOAD] {alias}")
+    print(f"    Source : {meta['url']}")
+    try:
+        with urlopen(meta["url"]) as resp:
+            data = resp.read()
+        with zipfile.ZipFile(io.BytesIO(data)) as zf:
+            names = zf.namelist()
+            # Si el zip envuelve todo en un directorio raíz único, aplanarlo.
+            roots = {n.split("/", 1)[0] for n in names if n.strip("/")}
+            strip_root = len(roots) == 1 and all("/" in n for n in names if not n.endswith("/"))
+            for n in names:
+                target_rel = n.split("/", 1)[1] if strip_root else n
+                if not target_rel or n.endswith("/"):
+                    continue
+                target = dest / target_rel
+                target.parent.mkdir(parents=True, exist_ok=True)
+                with zf.open(n) as src, open(target, "wb") as out:
+                    out.write(src.read())
+        print(f"    Saved  → {dest}")
+        return True
+    except Exception as exc:
+        print(f"    [WARN] Failed to download {alias}: {exc}")
+        return False
 
 
 def download_source(alias: str, meta: dict, api_key: str) -> bool:
@@ -144,7 +183,10 @@ def main() -> None:
 
     results = {}
     for alias, meta in SOURCES.items():
-        results[alias] = download_source(alias, meta, api_key)
+        if meta.get("type") == "http_zip":
+            results[alias] = download_http_zip(alias, meta)
+        else:
+            results[alias] = download_source(alias, meta, api_key)
 
     print()
     print("Summary")

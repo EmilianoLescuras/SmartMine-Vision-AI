@@ -25,7 +25,7 @@ EXPERIMENTS_DIR = PROJECT_ROOT / "experiments"
 # merged dataset dir so it is never committed — see write_dataset_yaml() below.
 DATASET_YAML    = DATASET_ROOT / "smartmine_unified.autogen.yaml"
 
-# ── Unified class registry (33 classes) ──────────────────────────────────────
+# ── Unified class registry (37 classes) ──────────────────────────────────────
 CLASS_NAMES: dict[int, str] = {
     # People — compliance embedded in class
     0:  "person",
@@ -64,6 +64,11 @@ CLASS_NAMES: dict[int, str] = {
     31: "machinery",
     32: "vehiculo_generico",   # SPEC-007: generic vehicle from CSS, kept apart
                                # so `camion` (17) stays semantically honest
+    # SPEC-008: separate PPE items from Construction-PPE
+    33: "guantes_epp",
+    34: "botas",
+    35: "lentes_epp",
+    36: "person_sin_botas",
 }
 
 # ── Compliance groups ─────────────────────────────────────────────────────────
@@ -131,6 +136,11 @@ CLASS_COLORS: dict[int, tuple[int, int, int]] = {
     30: (150, 150, 180),  # polvo               — grey-blue
     31: (128, 0, 128),    # machinery           — purple
     32: (100, 60, 0),     # vehiculo_generico   — muted blue
+    # SPEC-008 — separate PPE items, green/red family like their pairs
+    33: (0, 180, 120),    # guantes_epp         — green
+    34: (30, 160, 90),    # botas               — green
+    35: (0, 160, 160),    # lentes_epp          — teal
+    36: (40, 20, 200),    # person_sin_botas    — red
 }
 
 

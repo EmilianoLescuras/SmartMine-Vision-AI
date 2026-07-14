@@ -2,7 +2,7 @@ path: ../../datasets/merged/smartmine_v1
 train: train/images
 val: valid/images
 test: test/images
-nc: 33
+nc: 37
 names:
 - person
 - person_con_casco
@@ -37,3 +37,7 @@ names:
 - polvo
 - machinery
 - vehiculo_generico
+- guantes_epp
+- botas
+- lentes_epp
+- person_sin_botas

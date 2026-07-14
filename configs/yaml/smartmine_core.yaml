@@ -2,7 +2,7 @@ path: ../../datasets/merged/smartmine_core
 train: train/images
 val: valid/images
 test: test/images
-nc: 18
+nc: 26
 names:
 - person
 - person_con_casco
@@ -22,3 +22,11 @@ names:
 - rodillo
 - cisterna_agua
 - machinery
+- person_con_guantes
+- person_sin_guantes
+- person_con_lentes
+- person_sin_lentes
+- guantes_epp
+- botas
+- lentes_epp
+- person_sin_botas

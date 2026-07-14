@@ -65,6 +65,11 @@ UNIFIED_CLASSES = [
     "machinery",                     # 31  (generic, from CSS dataset)
     "vehiculo_generico",             # 32  (generic vehicle from CSS — kept apart
                                      #      so `camion` stays semantically honest)
+    # SPEC-008: separate PPE items from Construction-PPE (Ultralytics)
+    "guantes_epp",                   # 33  (separate gloves detection)
+    "botas",                         # 34  (separate safety boots detection)
+    "lentes_epp",                    # 35  (separate goggles detection)
+    "person_sin_botas",              # 36  (violation: person without boots)
 ]
 
 # ── Core training schema (SPEC-007 AC-5) ─────────────────────────────────────
@@ -91,6 +96,16 @@ CORE_CLASSES = [
     "rodillo",                       # 15
     "cisterna_agua",                 # 16
     "machinery",                     # 17
+    # SPEC-008: pairs that crossed the >=100 inst. threshold with
+    # Construction-PPE data (guantes/lentes/botas compliance)
+    "person_con_guantes",            # 18
+    "person_sin_guantes",            # 19
+    "person_con_lentes",             # 20
+    "person_sin_lentes",             # 21
+    "guantes_epp",                   # 22
+    "botas",                         # 23
+    "lentes_epp",                    # 24
+    "person_sin_botas",              # 25
 ]
 
 # unified id → core id (everything else is dropped from core, with accounting)
@@ -99,6 +114,8 @@ UNIFIED_TO_CORE: dict[int, int] = {
     27: 7, 28: 8, 25: 9,
     14: 10, 16: 11, 18: 12, 19: 13, 21: 14, 23: 15, 24: 16,
     31: 17,
+    5: 18, 6: 19, 7: 20, 8: 21,
+    33: 22, 34: 23, 35: 24, 36: 25,
 }
 
 PROJECT_ROOT = Path(__file__).parent.parent
@@ -243,6 +260,28 @@ SOURCES = [
             66: 16,   # VOLQUETE_DESCARGA              → volquete
         },
     },
+    {
+        # SPEC-008: Construction-PPE (Ultralytics, AGPL-3.0 — riesgo comercial
+        # documentado en specs/008). Layout images/<split> + split "val".
+        "name": "construction_ppe",
+        "path": PROJECT_ROOT / "datasets/raw/ppe/construction_ppe",
+        "splits": ["train", "val", "test"],
+        "layout": "images_first",          # images/<split> en vez de <split>/images
+        "split_map": {"val": "valid"},     # su "val" es nuestro "valid"
+        "class_map": {
+            0: 27,   # helmet     → hardhat
+            1: 33,   # gloves     → guantes_epp
+            2: 28,   # vest       → safety_vest
+            3: 34,   # boots      → botas
+            4: 35,   # goggles    → lentes_epp
+            5: None, # none       → skip (semántica ambigua, ver spec-008)
+            6: 0,    # Person     → person
+            7: 2,    # no_helmet  → person_sin_casco
+            8: 8,    # no_goggle  → person_sin_lentes
+            9: 6,    # no_gloves  → person_sin_guantes
+            10: 36,  # no_boots   → person_sin_botas
+        },
+    },
     # ── mining_area: EXCLUIDO del merge de detección (SPEC-007 AC-3) ──────────
     # Sus 3 clases son eventos de zona ("Kendaraan masuk tambang" = vehículo
     # entra al área), no tipos de objeto: mapearlas a `camion` inyectaba 2.551
@@ -373,13 +412,18 @@ def merge():
         print(f"  [{name}]  {src_root}")
 
         for split in source["splits"]:
-            img_src = src_root / split / "images"
-            lbl_src = src_root / split / "labels"
+            if source.get("layout") == "images_first":
+                img_src = src_root / "images" / split
+                lbl_src = src_root / "labels" / split
+            else:
+                img_src = src_root / split / "images"
+                lbl_src = src_root / split / "labels"
+            dst_split = source.get("split_map", {}).get(split, split)
             if not img_src.exists():
                 continue
             for base in (MERGED_DIR, CORE_DIR):
-                (base / split / "images").mkdir(parents=True, exist_ok=True)
-                (base / split / "labels").mkdir(parents=True, exist_ok=True)
+                (base / dst_split / "images").mkdir(parents=True, exist_ok=True)
+                (base / dst_split / "labels").mkdir(parents=True, exist_ok=True)
 
             for img_file in sorted(img_src.iterdir()):
                 if img_file.suffix.lower() not in {".jpg", ".jpeg", ".png"}:
@@ -400,20 +444,20 @@ def merge():
                     (MERGED_DIR, v1_lines, v1_class_totals),
                     (CORE_DIR, core_lines, core_class_totals),
                 ):
-                    shutil.copy2(img_file, base / split / "images" / (new_stem + img_file.suffix))
+                    shutil.copy2(img_file, base / dst_split / "images" / (new_stem + img_file.suffix))
                     # Empty file = explicit intentional background (SPEC-007
                     # AC-2): the validator must never see a missing label.
-                    with open(base / split / "labels" / (new_stem + ".txt"), "w") as f:
+                    with open(base / dst_split / "labels" / (new_stem + ".txt"), "w") as f:
                         f.writelines(lines)
                     for ln in lines:
                         cid = int(ln.split()[0])
                         totals[cid] = totals.get(cid, 0) + 1
 
-                counts[split]["images"] += 1
+                counts[dst_split]["images"] += 1
                 if v1_lines:
-                    counts[split]["labels"] += 1
+                    counts[dst_split]["labels"] += 1
                 else:
-                    counts[split]["backgrounds"] += 1
+                    counts[dst_split]["backgrounds"] += 1
                     backgrounds += 1
 
         per_source_stats[name] = {
