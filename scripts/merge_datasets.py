@@ -95,17 +95,26 @@ CORE_CLASSES = [
     "motoniveladora",                # 14
     "rodillo",                       # 15
     "cisterna_agua",                 # 16
-    "machinery",                     # 17
+    # `machinery` (unified id 31) deliberately excluded from core: it's
+    # css_ppe's generic catch-all for heavy equipment, and once riskalertai/
+    # construction_vehicles added real instances of the specific vehicle
+    # classes above, the same visual objects were getting contradictory
+    # supervision (same excavator-shaped object labeled `machinery` in one
+    # source, `excavadora` in another). Confirmed by measurement: with it in
+    # core, `machinery` had 5337 instances (2nd most of any class) yet AP50
+    # 0.033 (2nd worst) — a training-signal-conflict, not a data-volume
+    # problem. It stays in the 37-class archive schema (now 0 instances,
+    # same as `camion`/`person_con_chaleco`) for provenance.
     # SPEC-008: pairs that crossed the >=100 inst. threshold with
     # Construction-PPE data (guantes/lentes/botas compliance)
-    "person_con_guantes",            # 18
-    "person_sin_guantes",            # 19
-    "person_con_lentes",             # 20
-    "person_sin_lentes",             # 21
-    "guantes_epp",                   # 22
-    "botas",                         # 23
-    "lentes_epp",                    # 24
-    "person_sin_botas",              # 25
+    "person_con_guantes",            # 17
+    "person_sin_guantes",            # 18
+    "person_con_lentes",             # 19
+    "person_sin_lentes",             # 20
+    "guantes_epp",                   # 21
+    "botas",                         # 22
+    "lentes_epp",                    # 23
+    "person_sin_botas",              # 24
 ]
 
 # unified id → core id (everything else is dropped from core, with accounting)
@@ -113,9 +122,8 @@ UNIFIED_TO_CORE: dict[int, int] = {
     0: 0, 1: 1, 2: 2, 4: 3, 11: 4, 12: 5, 13: 6,
     27: 7, 28: 8, 25: 9,
     14: 10, 16: 11, 18: 12, 19: 13, 21: 14, 23: 15, 24: 16,
-    31: 17,
-    5: 18, 6: 19, 7: 20, 8: 21,
-    33: 22, 34: 23, 35: 24, 36: 25,
+    5: 17, 6: 18, 7: 19, 8: 20,
+    33: 21, 34: 22, 35: 23, 36: 24,
 }
 
 PROJECT_ROOT = Path(__file__).parent.parent
@@ -139,7 +147,9 @@ SOURCES = [
             5: 0,    # Person        → person
             6: 25,   # Safety Cone   → safety_cone
             7: 28,   # Safety Vest   → safety_vest
-            8: 31,   # machinery     → machinery
+            8: None, # machinery     → skip (conflicts with specific vehicle
+                     #                 classes from riskalertai/construction_vehicles;
+                     #                 see CORE_CLASSES comment above)
             9: 32,   # vehicle       → vehiculo_generico (SPEC-007 AC-4:
                      #                 was polluting `camion` with 1,628 generic
                      #                 construction vehicles)
@@ -280,6 +290,105 @@ SOURCES = [
             8: 8,    # no_goggle  → person_sin_lentes
             9: 6,    # no_gloves  → person_sin_guantes
             10: 36,  # no_boots   → person_sin_botas
+        },
+    },
+    {
+        # riskalertai-mining v10 — mismo workspace/dominio que `riskalert`
+        # (personal-q02wc), versión más nueva con más clases e imágenes.
+        # Sin overlap de imágenes verificado por hash MD5 contra riskalert,
+        # construction_ppe, css_ppe y el corpus ya mergeado. Aporta el grueso
+        # de la señal de vehículos que se perdió al no poder descargar
+        # `deteccion_escenarios` (proyecto dado de baja en Roboflow).
+        "name": "riskalertai",
+        "path": PROJECT_ROOT / "datasets/raw/vehicles/riskalertai",
+        "splits": ["train", "valid", "test"],
+        "class_map": {
+            0:  29,   # ANIMAL                          → animal
+            1:  None, # ARNES                           → skip
+            2:  None, # BANO_QUIMICO                    → skip
+            3:  None, # BANO_QUIMICO_SIN_MURO           → skip
+            4:  None, # BEBEDERO                        → skip
+            5:  14,   # CAMIONETA                       → camioneta
+            6:  20,   # CARGADOR_FRONTAL                → cargador_frontal
+            7:  None, # CASETA_VIGIA                    → skip
+            8:  None, # CERCANIA_VOLQUETE_EXCAVADORA    → skip (relación, no objeto)
+            9:  24,   # CISTERNA_DE_AGUA                → cisterna_agua
+            10: None, # CLIMA_ADVERSO                   → skip
+            11: 25,   # CONOS_DELIMITADORES             → safety_cone
+            12: None, # DELIMITACION_DE_AREA            → skip
+            13: None, # DESCARGA_VOLQUETE_CON_CUADRADOR → skip
+            14: None, # ESPEJO_OJO_PEZ                  → skip
+            15: None, # ESTACIONAMIENTO_CON_SENALETICA  → skip
+            16: None, # ESTACIONAMIENTO_LIVIANO_SIN_SENALETICA → skip
+            17: None, # ESTACIONAMIENTO_VEHICULO_LIVIANO → skip
+            18: None, # ETIQUETA_BUEN_ESTADO            → skip
+            19: None, # ETIQUETA_MAL_ESTADO             → skip
+            20: 18,   # EXCAVADORA                      → excavadora
+            21: 18,   # EXCAVADORA_ESTACIONADA          → excavadora (mismo objeto)
+            22: None, # LAVAMANOS                       → skip
+            23: None, # LLUVIA                          → skip
+            24: None, # MARTILLO                        → skip (sin clase de herramienta)
+            25: None, # MARTILLO_SIN_MURO               → skip
+            26: 15,   # MINIBUS                         → minibus
+            27: 21,   # MOTONIVELADORA                  → motoniveladora
+            28: None, # MUROS_CASETA_VIGIA              → skip
+            29: None, # MURO_SEGURIDAD_CON_MATERIAL_GRUESO → skip
+            30: None, # NEBLINA                         → skip
+            31: None, # OPERACION_OBSTACULO_VIA         → skip
+            32: 6,    # PERSONA _SIN_GUANTE_SEGURIDAD    → person_sin_guantes
+            33: 1,    # PERSONA_CASCO_BLANCO            → person_con_casco
+            34: 13,   # PERSONA_CON_BARBIJO             → mask
+            35: 1,    # PERSONA_CON_CASCO               → person_con_casco
+            36: 1,    # PERSONA_CON_CASCO_AMARILLO      → person_con_casco
+            37: 1,    # PERSONA_CON_CASCO_AZUL          → person_con_casco
+            38: 5,    # PERSONA_CON_GUANTES             → person_con_guantes
+            39: 7,    # PERSONA_CON_LENTES_CLARO        → person_con_lentes
+            40: 7,    # PERSONA_CON_LENTES_OSCURA       → person_con_lentes
+            41: 9,    # PERSONA_CON_RESPIRADOR          → person_con_respirador
+            42: None, # PERSONA_CON_TRAJE_DESCARTABLE   → skip
+            43: None, # PERSONA_CON_TRAJE_DESCARTABLE_SIN_CINTAS → skip
+            44: 0,    # PERSONA_LEJOS_MAQUINARIA        → person
+            45: 11,   # PERSONA_ROPA_CINTA_REFLECTIVA   → person_ropa_reflectiva
+            46: 2,    # PERSONA_SIN_CASCO               → person_sin_casco
+            47: 8,    # PERSONA_SIN_LENTES_SEGURIDAD    → person_sin_lentes
+            48: 10,   # PERSONA_SIN_RESPIRADOR          → person_sin_respirador
+            49: None, # PLATAFORMA_CON_MURO_DE_SEGURIDAD → skip
+            50: 30,   # POLVO                           → polvo
+            51: None, # REGADIO_VIA                     → skip
+            52: 19,   # RETROEXCAVADORA                 → retro_excavadora
+            53: 23,   # RODILLO                         → rodillo
+            54: 26,   # SENALETICA_VEHICULO_LIVIANO     → senalizacion
+            55: None, # TRABATUERCA_GOTA                → skip
+            56: None, # TRABATUERCA_NO_ESTANDAR         → skip
+            57: 22,   # TRACTOR                         → tractor
+            58: 22,   # TRACTOR_ESTACIONADO             → tractor (mismo objeto)
+            59: None, # VIA_CON_MURO_SEGURIDAD          → skip
+            60: None, # VIA_EN_MAL_ESTADO               → skip
+            61: None, # VIA_NO_REGADA                   → skip
+            62: None, # VIA_REGADA                      → skip
+            63: None, # VIA_SATURADA                    → skip
+            64: None, # VIA_SENALIZADA                  → skip
+            65: None, # VIA_SIN_MURO_SEGURIDAD          → skip
+            66: 16,   # VOLQUETE                        → volquete
+            67: 16,   # VOLQUETE_DESCARGA               → volquete (mismo objeto)
+        },
+    },
+    {
+        # construction_vehicles: equipo genérico de construcción, no minero.
+        # Solo se toman las 2 clases con equivalente real en el schema
+        # (excavadora, volquete); Crane/Forklift/PileDriver/TowerCrane quedan
+        # fuera de dominio (minería a cielo abierto) y no se fuerzan a
+        # `machinery` para no diluir esa clase con equipo no relacionado.
+        "name": "construction_vehicles",
+        "path": PROJECT_ROOT / "datasets/raw/vehicles/construction_vehicles",
+        "splits": ["train", "valid", "test"],
+        "class_map": {
+            0: None, # Crane      → skip (fuera de dominio)
+            1: 16,   # DumpTruck  → volquete
+            2: 18,   # Excavator  → excavadora
+            3: None, # Forklift   → skip (fuera de dominio)
+            4: None, # PileDriver → skip (fuera de dominio)
+            5: None, # TowerCrane → skip (fuera de dominio)
         },
     },
     # ── mining_area: EXCLUIDO del merge de detección (SPEC-007 AC-3) ──────────

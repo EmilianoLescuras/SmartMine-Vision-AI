@@ -25,6 +25,25 @@ EXPERIMENTS_DIR = PROJECT_ROOT / "experiments"
 # merged dataset dir so it is never committed — see write_dataset_yaml() below.
 DATASET_YAML    = DATASET_ROOT / "smartmine_unified.autogen.yaml"
 
+# ── Core training corpus (SPEC-007 AC-5) ─────────────────────────────────────
+# 26-class curated schema — every class had >=100 measured instances at merge
+# design time, and semantically ambiguous/generic classes are excluded. Use
+# this instead of the 37-class archive schema above when *training* a model;
+# the archive schema keeps rare/zero-instance classes (e.g. `camion`,
+# `person_con_chaleco`) that no amount of epochs or model capacity can learn
+# from, which drags the averaged mAP down. See scripts/merge_datasets.py for
+# the generation logic and docs/research/ for the coverage analysis.
+CORE_DATASET_ROOT = PROJECT_ROOT / "datasets" / "merged" / "smartmine_core"
+
+CORE_TRAIN_IMAGES = CORE_DATASET_ROOT / "train" / "images"
+CORE_TRAIN_LABELS = CORE_DATASET_ROOT / "train" / "labels"
+CORE_VALID_IMAGES = CORE_DATASET_ROOT / "valid" / "images"
+CORE_VALID_LABELS = CORE_DATASET_ROOT / "valid" / "labels"
+CORE_TEST_IMAGES  = CORE_DATASET_ROOT / "test"  / "images"
+CORE_TEST_LABELS  = CORE_DATASET_ROOT / "test"  / "labels"
+
+CORE_DATASET_YAML = CORE_DATASET_ROOT / "smartmine_core.autogen.yaml"
+
 # ── Unified class registry (37 classes) ──────────────────────────────────────
 CLASS_NAMES: dict[int, str] = {
     # People — compliance embedded in class
@@ -69,6 +88,37 @@ CLASS_NAMES: dict[int, str] = {
     34: "botas",
     35: "lentes_epp",
     36: "person_sin_botas",
+}
+
+# 26-class core training registry — must track scripts/merge_datasets.py::CORE_CLASSES.
+CORE_CLASS_NAMES: dict[int, str] = {
+    0:  "person",
+    1:  "person_con_casco",
+    2:  "person_sin_casco",
+    3:  "person_sin_chaleco",
+    4:  "person_ropa_reflectiva",
+    5:  "person_sin_ropa_reflectiva",
+    6:  "mask",
+    7:  "hardhat",
+    8:  "safety_vest",
+    9:  "safety_cone",
+    10: "camioneta",
+    11: "volquete",
+    12: "excavadora",
+    13: "retro_excavadora",
+    14: "motoniveladora",
+    15: "rodillo",
+    16: "cisterna_agua",
+    # `machinery` (unified id 31) dropped from core — see the comment on
+    # CORE_CLASSES in scripts/merge_datasets.py for why.
+    17: "person_con_guantes",
+    18: "person_sin_guantes",
+    19: "person_con_lentes",
+    20: "person_sin_lentes",
+    21: "guantes_epp",
+    22: "botas",
+    23: "lentes_epp",
+    24: "person_sin_botas",
 }
 
 # ── Compliance groups ─────────────────────────────────────────────────────────
@@ -172,6 +222,31 @@ def write_dataset_yaml(dest: Path = DATASET_YAML) -> Path:
     names = [CLASS_NAMES[i] for i in range(len(CLASS_NAMES))]
     cfg = {
         "path":  str(DATASET_ROOT),
+        "train": "train/images",
+        "val":   "valid/images",
+        "test":  "test/images",
+        "nc":    len(names),
+        "names": names,
+    }
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_text(yaml.safe_dump(cfg, sort_keys=False, allow_unicode=True))
+    return dest
+
+
+def write_core_dataset_yaml(dest: Path = CORE_DATASET_YAML) -> Path:
+    """Write the core-schema dataset config with an ABSOLUTE ``path`` and return it.
+
+    Same rationale as ``write_dataset_yaml()`` above (Ultralytics resolves a
+    relative ``path:`` against its global ``datasets_dir``, not the YAML's own
+    location) — regenerated at runtime from ``CORE_DATASET_ROOT`` so nothing
+    machine-specific is committed. ``nc``/``names`` come from
+    ``CORE_CLASS_NAMES``, the 26-class training schema (see SPEC-007 AC-5).
+    """
+    import yaml
+
+    names = [CORE_CLASS_NAMES[i] for i in range(len(CORE_CLASS_NAMES))]
+    cfg = {
+        "path":  str(CORE_DATASET_ROOT),
         "train": "train/images",
         "val":   "valid/images",
         "test":  "test/images",

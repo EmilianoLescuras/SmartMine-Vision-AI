@@ -1,30 +1,27 @@
 {
-  "generated_at": "2026-06-30T09:26:47.509342",
+  "generated_at": "2026-07-14T20:08:25.502660",
   "dataset": "SmartMine Unified Dataset",
-  "total_files": 6156,
+  "total_files": 7407,
   "splits": {
     "test": {
-      "images": 261,
-      "with_label": 220,
-      "background": 0,
-      "with_issues": 41
+      "images": 469,
+      "with_label": 469,
+      "background": 95,
+      "with_issues": 0
     },
     "train": {
-      "images": 5481,
-      "with_label": 4939,
-      "background": 0,
-      "with_issues": 543
+      "images": 6189,
+      "with_label": 6189,
+      "background": 716,
+      "with_issues": 0
     },
     "valid": {
-      "images": 414,
-      "with_label": 354,
-      "background": 0,
-      "with_issues": 60
+      "images": 749,
+      "with_label": 749,
+      "background": 157,
+      "with_issues": 0
     }
   },
-  "real_issue_counts": {
-    "missing_label": 643,
-    "duplicate_of:riskalert_Captura-de-pantalla-2026-06-19-194128_png.rf.158e6002b38270396729574ad945e5ff.jpg": 1
-  },
-  "verdict": "ISSUES FOUND"
+  "real_issue_counts": {},
+  "verdict": "CLEAN"
 }

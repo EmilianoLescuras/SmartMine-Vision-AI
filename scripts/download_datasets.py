@@ -29,10 +29,10 @@ PROJECT_ROOT = _here.parent
 SOURCES = {
     # ── PPE ──────────────────────────────────────────────────────────────────
     "css-data": {
-        "workspace": "roboflow-100",
+        "workspace": "roboflow-universe-projects",
         "project":   "construction-site-safety",
-        "version":   1,
-        "url":       "https://universe.roboflow.com/roboflow-100/construction-site-safety",
+        "version":   27,
+        "url":       "https://universe.roboflow.com/roboflow-universe-projects/construction-site-safety",
         "dest":      "datasets/raw/ppe/css-data",
     },
     # ── Vehicles ─────────────────────────────────────────────────────────────
@@ -166,7 +166,12 @@ def download_source(alias: str, meta: dict, api_key: str) -> bool:
         rf = Roboflow(api_key=api_key)
         project = rf.workspace(meta["workspace"]).project(meta["project"])
         version = project.version(meta["version"])
-        version.download(DOWNLOAD_FORMAT, location=str(dest), overwrite=False)
+        # overwrite=True: the SDK's own `os.path.exists(location) and not
+        # overwrite` guard would otherwise skip the download and report a
+        # false success, since `dest` already exists (we just mkdir'd it,
+        # and the repo ships it with a tracked .gitkeep placeholder). Our
+        # `_is_downloaded()` check above already handles skip-if-present.
+        version.download(DOWNLOAD_FORMAT, location=str(dest), overwrite=True)
         print(f"    Saved  → {dest}")
         return True
     except Exception as exc:

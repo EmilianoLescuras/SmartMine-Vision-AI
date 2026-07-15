@@ -2,7 +2,7 @@ path: ../../datasets/merged/smartmine_core
 train: train/images
 val: valid/images
 test: test/images
-nc: 26
+nc: 25
 names:
 - person
 - person_con_casco
@@ -21,7 +21,6 @@ names:
 - motoniveladora
 - rodillo
 - cisterna_agua
-- machinery
 - person_con_guantes
 - person_sin_guantes
 - person_con_lentes

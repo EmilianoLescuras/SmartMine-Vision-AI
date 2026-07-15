@@ -500,7 +500,10 @@ records:     list = []
 seen_hashes: dict = {}
 
 for split_name, img_dir, lbl_dir in splits:
-    images = sorted(img_dir.glob("*.jpg")) + sorted(img_dir.glob("*.png"))
+    images = sorted(
+        p for ext in ("*.jpg", "*.jpeg", "*.png", "*.JPG", "*.JPEG", "*.PNG", "*.bmp")
+        for p in img_dir.glob(ext)
+    )
     print(f"  Checking {split_name}: {len(images)} images...", end=" ")
 
     for img_path in images:
@@ -685,7 +688,7 @@ import yaml
 from ultralytics import YOLO
 
 from src.ppe_detection.utils import (
-    MODELS_DIR, EXPERIMENTS_DIR, ensure_dirs, write_dataset_yaml
+    MODELS_DIR, EXPERIMENTS_DIR, ensure_dirs, write_core_dataset_yaml
 )
 from src.ppe_detection.trainer import (
     train_ppe_model, detect_train_device, recommended_train_config
@@ -726,12 +729,21 @@ print("=" * 50)"""),
         md("""\
 ## 3. Dataset Configuration
 
-`write_dataset_yaml()` regenerates the dataset config with an **absolute** `path`
-resolved from `src/ppe_detection/utils.py`. This avoids Ultralytics' relative-path
-trap (it resolves `path:` against its global `datasets_dir`, not the YAML location),
-which otherwise makes training fail with *"images not found"*."""),
+We train on the **core 26-class schema** (`datasets/merged/smartmine_core`),
+not the 37-class archive schema. The archive schema keeps rare/zero-instance
+classes (e.g. `camion`: 0 instances, `person_con_chaleco`: 0, `excavadora`: 2)
+that no amount of epochs or model capacity can learn — they only drag the
+averaged mAP down. The core schema (SPEC-007 AC-5) was curated to classes with
+enough measured support to actually be trainable; see
+`scripts/merge_datasets.py::CORE_CLASSES` for the selection criteria.
+
+`write_core_dataset_yaml()` regenerates the dataset config with an **absolute**
+`path` resolved from `src/ppe_detection/utils.py`. This avoids Ultralytics'
+relative-path trap (it resolves `path:` against its global `datasets_dir`, not
+the YAML location), which otherwise makes training fail with *"images not
+found"*."""),
         code("""\
-DATA_YAML = write_dataset_yaml()   # absolute-path config, resolved from utils
+DATA_YAML = write_core_dataset_yaml()   # absolute-path config, resolved from utils
 print(f"Config: {DATA_YAML}")
 print(f"Exists: {DATA_YAML.exists()}")
 print()
@@ -778,7 +790,7 @@ this unchanged. Override `cfg` in the next cell to customise.
 > automatically — no notebook edits needed.
 
 > **Reproducibility:** All training args are saved automatically to
-> `experiments/smartmine_v1/baseline/args.yaml` by Ultralytics."""),
+> `experiments/smartmine_core/core_no_machinery/args.yaml` by Ultralytics."""),
 
         md("## 5. Launch Training"),
         code("""\
@@ -791,10 +803,13 @@ this unchanged. Override `cfg` in the next cell to customise.
 cfg = recommended_train_config(DEVICE)
 print(f"Device: {DEVICE}   training config: {cfg}")
 
+# Separate project dir + run name from the v1/archive baseline so both remain
+# on disk for comparison (experiments/smartmine_v1/baseline vs. this run).
 best_weights = train_ppe_model(
     data_yaml  = DATA_YAML,
     base_model = "yolov8n.pt",
-    name       = "baseline",
+    project    = str(EXPERIMENTS_DIR / "smartmine_core"),
+    name       = "core_no_machinery",
     device     = DEVICE,
     **cfg,
 )
@@ -807,7 +822,7 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from pathlib import Path
 
-EXP_DIR = EXPERIMENTS_DIR / "smartmine_v1" / "baseline"
+EXP_DIR = EXPERIMENTS_DIR / "smartmine_core" / "core_no_machinery"
 
 results_png = EXP_DIR / "results.png"
 if results_png.exists():
@@ -817,7 +832,7 @@ if results_png.exists():
     plt.axis("off")
     plt.title("Training Curves — Loss & mAP", fontsize=14, fontweight="bold")
     plt.tight_layout()
-    plt.savefig(str(EXPERIMENTS_DIR / "smartmine_v1" / "training_curves.png"), dpi=150)
+    plt.savefig(str(EXPERIMENTS_DIR / "smartmine_core" / "training_curves.png"), dpi=150)
     plt.show()
 else:
     print(f"Run training first. Expected: {results_png}")"""),
