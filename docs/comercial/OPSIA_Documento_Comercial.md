@@ -106,8 +106,9 @@ turno, área o contratista, exportables y listos para auditoría.
   con su motivo).
 - **26 clases** detectadas simultáneamente: personas, 5 categorías de EPP y sus
   ausencias, 7 tipos de vehículo industrial-minero y auxiliares de señalización.
-- Demo pública con **detecciones reales del modelo** (no montajes) disponible en
-  nuestra web sobre video de referencia de mina a cielo abierto.
+- Demostración con **detecciones reales del modelo** (no montajes) sobre video de
+  referencia de mina a cielo abierto — se presenta en reunión; la web institucional
+  exhibe una simulación de interfaz identificada como tal.
 - Inferencia eficiente: el modelo corre en tiempo real (24+ FPS) y puede desplegarse
   en servidores modestos del cliente — el costo operativo por cámara es bajo y
   predecible.
@@ -189,7 +190,8 @@ demos son detecciones reales del modelo, y lo que todavía no está listo se dic
 - Modelo de detección v0.2 entrenado y validado (26 clases; EPP como objeto con
   precisión alta; vehículos mineros principales operativos).
 - Pipeline completo de datos: auditoría, limpieza con trazabilidad, corpus reproducible.
-- Demo funcional pública con detecciones reales sobre video de mina a cielo abierto.
+- Demostración funcional con detecciones reales del modelo (material disponible para
+  reuniones comerciales).
 - Presencia comercial: web institucional, identidad de marca, canal de contacto.
 
 **Próximos 6 meses:**

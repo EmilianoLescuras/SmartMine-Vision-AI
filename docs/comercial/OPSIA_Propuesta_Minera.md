@@ -177,8 +177,10 @@ justifican. No se requieren compromisos de largo plazo para iniciar.
   elementos de señalización.
 - **Rendimiento en tiempo real** (24+ cuadros por segundo) sobre hardware de
   servidor estándar; costo operativo por cámara bajo y predecible.
-- **Demostración verificable:** demo pública con detecciones reales del modelo —
-  sin ediciones ni montajes — disponible en opsia-cv.netlify.app.
+- **Demostración verificable:** demostración con detecciones reales del modelo —
+  sin ediciones ni montajes — presentada en la reunión de trabajo. La web
+  institucional (opsia-cv.netlify.app) exhibe una simulación ilustrativa de la
+  interfaz de operador, identificada como tal.
 - **Mejora continua:** el sistema está diseñado para incorporar datos del sitio de
   cada cliente (previa autorización expresa), lo que incrementa la precisión sobre
   las condiciones particulares de esa operación: uniformes corporativos, flota
