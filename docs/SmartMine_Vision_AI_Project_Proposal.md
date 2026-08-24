@@ -519,4 +519,4 @@ Depende del hardware. Con una GPU RTX 3090, el sistema puede procesar entre 4-8 
 
 *Documento preparado por: Emiliano Lescuras*
 *SmartMine Vision AI — Proyecto de Portfolio Profesional*
-*Contacto: lescurasnana@gmail.com*
+*Contacto: disponible bajo solicitud (LinkedIn / GitHub)*
